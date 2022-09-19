@@ -1,42 +1,53 @@
-using System;
-using System.Diagnostics;
+﻿using System;
 using System.Linq;
 using Tensorflow;
 using Tensorflow.Keras;
 using Tensorflow.Keras.ArgsDefinition;
 using Tensorflow.Keras.Engine;
 using Tensorflow.NumPy;
-using Xunit;
 using static Tensorflow.Binding;
 using static Tensorflow.KerasApi;
 
-namespace MGroup.MachineLearning.Tests
+namespace TensorFlowNET.Examples
 {
-    public class FeedForwardNeuralNetworkImage
+    /// <summary>
+    /// Build a convolutional neural network with TensorFlow v2.
+    /// https://github.com/aymericdamien/TensorFlow-Examples/blob/master/tensorflow_v2/notebooks/3_NeuralNetworks/neural_network.ipynb
+    /// </summary>
+    public class FullyConnectedKeras
     {
         // MNIST dataset parameters.
         int num_classes = 10; // 0 to 9 digits
         int num_features = 784; // 28*28
 
         // Training parameters.
-        float learning_rate = 0.01f;
+        float learning_rate = 0.1f;
         int display_step = 100;
-        int batch_size = 1024;
+        int batch_size = 256;
         int training_steps = 1000;
 
         float accuracy;
         IDatasetV2 train_data;
         NDArray x_test, y_test, x_train, y_train;
 
-        //public ExampleConfig InitConfig()
-        //    => Config = new ExampleConfig
-        //    {
-        //        Name = "Fully Connected Neural Network (Keras)",
-        //        Enabled = true,
-        //        IsImportingGraph = false
-        //    };
+        public void PrepareData()
+        {
+            // Prepare MNIST data.
+            ((x_train, y_train), (x_test, y_test)) = keras.datasets.mnist.load_data();
+            // Flatten images to 1-D vector of 784 features (28*28).
+            (x_train, x_test) = (x_train.reshape((-1, num_features)), x_test.reshape((-1, num_features)));
+            // Normalize images value from [0, 255] to [0, 1].
+            (x_train, x_test) = (x_train / 255f, x_test / 255f);
 
-        [Fact]
+            // Use tf.data API to shuffle and batch data.
+            train_data = tf.data.Dataset.from_tensor_slices(x_train, y_train);
+            train_data = train_data.repeat()
+                .shuffle(5000)
+                .batch(batch_size)
+                .prefetch(1)
+                .take(training_steps);
+        }
+
         public bool Run()
         {
             tf.enable_eager_execution();
@@ -74,7 +85,7 @@ namespace MGroup.MachineLearning.Tests
             };
 
             // Stochastic gradient descent optimizer.
-            var optimizer = keras.optimizers.Adam();
+            var optimizer = keras.optimizers.SGD(learning_rate);
 
             // Optimization process.
             Action<Tensor, Tensor> run_optimization = (x, y) =>
@@ -105,7 +116,6 @@ namespace MGroup.MachineLearning.Tests
                     var loss = cross_entropy_loss(pred, batch_y);
                     var acc = accuracy(pred, batch_y);
                     print($"step: {step}, loss: {(float)loss}, accuracy: {(float)acc}");
-                    Debug.WriteLine(($"step: {step}, loss: {(float)loss}, accuracy: {(float)acc}"));
                 }
             }
 
@@ -119,25 +129,7 @@ namespace MGroup.MachineLearning.Tests
             return this.accuracy > 0.92f;
         }
 
-        void PrepareData()
-        {
-            // Prepare MNIST data.
-            ((x_train, y_train), (x_test, y_test)) = keras.datasets.mnist.load_data();
-            // Flatten images to 1-D vector of 784 features (28*28).
-            (x_train, x_test) = (x_train.reshape((-1, num_features)), x_test.reshape((-1, num_features)));
-            // Normalize images value from [0, 255] to [0, 1].
-            (x_train, x_test) = (x_train / 255f, x_test / 255f);
-
-            // Use tf.data API to shuffle and batch data.
-            train_data = tf.data.Dataset.from_tensor_slices(x_train, y_train);
-            train_data = train_data.repeat()
-                .shuffle(5000)
-                .batch(batch_size)
-                .prefetch(1)
-                .take(training_steps);
-        }
-
-        class NeuralNet : Model
+        public class NeuralNet : Model
         {
             Layer fc1;
             Layer fc2;
@@ -174,7 +166,7 @@ namespace MGroup.MachineLearning.Tests
         /// <summary>
         /// Network parameters.
         /// </summary>
-        class NeuralNetArgs : ModelArgs
+        public class NeuralNetArgs : ModelArgs
         {
             /// <summary>
             /// 1st layer number of neurons.
