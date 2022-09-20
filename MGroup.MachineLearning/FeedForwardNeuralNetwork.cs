@@ -7,18 +7,22 @@ using Tensorflow;
 using Tensorflow.Keras;
 using Tensorflow.Keras.ArgsDefinition;
 using Tensorflow.Keras.Engine;
+using Tensorflow.Keras.Optimizers;
 using Tensorflow.NumPy;
+using Tensorflow.Keras.Layers;
 using static Tensorflow.Binding;
 using static Tensorflow.KerasApi;
+using Tensorflow.Keras.Losses;
 
 namespace MGroup.MachineLearning
 {
     public class FeedForwardNeuralNetwork : Model
     {
-        string Preprocessing { get; set; }
+        public INormalization Normalization { get; set; }
 
         //Optimization Parameters
-        public string Optimizer { get; set; }
+        public OptimizerV2 Optimizer { get; set; }
+        public ILossFunc LossFunction { get; set; }
         public double LearningRate { get; set; }
         public int BatchSize { get; set; }
         public int Epochs { get; set; }
@@ -30,144 +34,117 @@ namespace MGroup.MachineLearning
         public int[] NumNeuronsPerLayer { get; set; }
         public Activation[] ActivationFunctionPerLayer { get; set; }
 
-        //ModelArgs Args { get; set; }
+        Model model;
+        NDArray trainX;
+        NDArray testX;
+        NDArray trainY;
+        NDArray testY;
 
         public FeedForwardNeuralNetwork(ModelArgs? args = null) : base(args: new ModelArgs())
         {
-            //InitializeParameters();
-            Preprocessing = "minmax";
-            Optimizer = "SGD";
-            LearningRate = 0.01;
-            BatchSize = 50;
-            Epochs = 100;
+            Optimizer = keras.optimizers.Adam();
+            LearningRate = 0.001;
+            BatchSize = -1;
+            Epochs = 1;
             DisplayStep = 100;
             NumHiddenLayers = 1;
             NumNeuronsPerLayer = new int[] { 1 };
             ActivationFunctionPerLayer = new Activation[] { keras.activations.Linear };
             Layer = new Layer[1] { keras.layers.Dense(NumNeuronsPerLayer[0], ActivationFunctionPerLayer[0]) };
-            //Args = args;
         }
 
-        //private void InitializeParameters()
-        //{
-        //    Optimizer = "SGD";
-        //    LearningRate = 0.01;
-        //    BatchSize = 64;
-        //    Epochs = 100;
-        //    NumHiddenLayers = 1;
-        //    NumNeuronsPerLayer = new int[] { 1 };
-        //    ActivationFunctionPerLayer = new Activation[] { keras.activations.Linear };
-        //}
-
-        public void TrainNetwork(double[] trainX, double[] trainY)
+        public void Train(double[,] trainX, double[,] trainY, double[,] testX = null, double[,] testY = null)
         {
             tf.enable_eager_execution();
 
-            var npTrainX = np.array(trainX);
-            var npTrainY = np.array(trainY);
-            var train_data = tf.data.Dataset.from_tensor_slices(npTrainX, npTrainY);
-            train_data = train_data.repeat()
-                //.shuffle(5000)
-                .batch(BatchSize)
-                //.prefetch(1)
-                .take(Epochs);
-
-            var neuralNetworkArgs = new ModelArgs();
-
-            var neuralNetwork = new Model(neuralNetworkArgs);
-
-            var optimizer = keras.optimizers.SGD((float)LearningRate);
-
-            Layer = new Layer[NumHiddenLayers + 1];
-
-            var layers = keras.layers;
-
-            for (int i = 0; i < NumHiddenLayers; i++)
-            {
-                Layer[i] = layers.Dense(NumNeuronsPerLayer[i], ActivationFunctionPerLayer[i]);
-            }
-
-            if (trainY.Rank == 1)
-            {
-                Layer[NumHiddenLayers] = layers.Dense(1); // 0 or 1 ??
-            }
-            else
-            {
-                Layer[NumHiddenLayers] = layers.Dense(trainY.GetLength(1));
-            }
-            StackLayers(Layer);
-
-            Func<Tensor, Tensor, Tensor> cross_entropy_loss = (x, y) =>
-            {
-                y = tf.cast(y, tf.int64);
-                //var loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels: y, logits: x);
-                var loss = tf.reduce_sum(tf.pow(x - y, 2.0f)) / (2.0f * trainY.GetLength(0));
-                //return tf.reduce_mean(loss);
-                return loss;
-            };
-
-            Func<Tensor, Tensor, Tensor> accuracy = (y_pred, y_true) =>
-            {
-                // Predicted class is the index of highest score in prediction vector (i.e. argmax).
-                var correct_prediction = tf.equal(tf.math.argmax(y_pred, 1), tf.cast(y_true, tf.int64));
-                return tf.reduce_mean(tf.cast(correct_prediction, tf.float32), axis: -1);
-            };
-
-            Action<Tensor, Tensor> run_optimization = (x, y) =>
-            {
-                // Wrap computation inside a GradientTape for automatic differentiation.
-                using var g = tf.GradientTape();
-                // Forward pass.
-                var pred = Apply(x, training: true);
-                var loss = cross_entropy_loss(pred, y);
-
-                // Compute gradients.
-                var gradients = g.gradient(loss, trainable_variables);
-
-                // Update W and b following gradients.
-                optimizer.apply_gradients(zip(gradients, trainable_variables.Select(x => x as ResourceVariable)));
-            };
-
-            // Run training for the given number of steps.
-            foreach (var (step, (batch_x, batch_y)) in enumerate(train_data, 1))
-            {
-                // Run the optimization to update W and b values.
-                run_optimization(batch_x, batch_y);
-
-                if (step % DisplayStep == 0)
+            if (Normalization != null) 
+            {   
+                if (testX != null)
                 {
-                    var pred = Apply(batch_x, training: true);
-                    var loss = cross_entropy_loss(pred, batch_y);
-                    var acc = accuracy(pred, batch_y);
-                    print($"step: {step}, loss: {(float)loss}, accuracy: {(float)acc}");
+                    var trainAndTestX = new double[trainX.GetLength(0) + testX.GetLength(0),trainX.GetLength(1)];
+                    trainX.CopyTo(trainAndTestX, 0);
+                    testX.CopyTo(trainAndTestX, trainX.Length);
+                    //
+                    trainX = Normalization.Normalize(trainX, dim: 1);
+                    testX = Normalization.Normalize(testX, dim: 1);
+                }
+                else
+                {
+                    trainX = Normalization.Normalize(trainX, dim: 1);
                 }
             }
+
+            this.trainX = np.array(ToFloat(trainX));
+            this.trainY = np.array(ToFloat(trainY));
+            
+            if (testX != null && testY != null)
+            {
+                this.testX = np.array(ToFloat(testX));
+                this.testY = np.array(ToFloat(testY));
+            }
+            
+            var layers = new LayersApi();
+
+            inputs = keras.Input(shape: trainX.GetLength(1)); // 0 or 1 ??
+
+            outputs = layers.Dense(NumNeuronsPerLayer[0], ActivationFunctionPerLayer[0]).Apply(inputs);
+
+            for (int i = 1; i < NumHiddenLayers; i++)
+            {
+                outputs = layers.Dense(NumNeuronsPerLayer[i], ActivationFunctionPerLayer[i]).Apply(outputs);
+            }
+
+            outputs = layers.Dense(1).Apply(outputs);
+
+            // build keras model
+            model = keras.Model(inputs, outputs, name: "current_model");
+            // show model summary
+            model.summary();
+
+            // compile keras model into tensorflow's static graph
+            model.compile(loss: LossFunction,
+                optimizer: Optimizer,
+                metrics: new[] { "accuracy" });
+            
+            // train the model
+            model.fit(this.trainX, this.trainY, batch_size: BatchSize, epochs: Epochs);
+
+            // evaluate the model
+            if (testX != null && testY != null)
+            {
+                model.evaluate(this.testX, this.testY, batch_size: BatchSize);
+            }
+            
+            // save and serialize model
+            model.save("current_model");
+
+            // recreate the exact same model purely from the file:
+            // model = keras.models.load_model("path_to_my_model");
         }
 
-        //public class FeedForwardNeuralNetArgs : ModelArgs
-        //{
-        //    /// <summary>
-        //    /// 1st layer number of neurons.
-        //    /// </summary>
-
-        //    public int NeuronOfHidden1 { get; set; }
-        //    public Activation Activation1 { get; set; }
-
-        //    /// <summary>
-        //    /// 2nd layer number of neurons.
-        //    /// </summary>
-        //    public int NeuronOfHidden2 { get; set; }
-        //    public Activation Activation2 { get; set; }
-
-        //    public int NumClasses { get; set; }
-        //}
-
-        public double[] Predict(double[] X)
+        public void Predict(double[,] data)
         {
-            var npX = np.array(X);
-            var npPrediction = Apply(npX, training: false);
-            double[] prediction = new double[1];
-            return prediction;
+            if (Normalization != null)
+            {
+                (data) = Normalization.Normalize(data, dim: 1);
+            }
+            var npData = np.array(ToFloat(data));
+            // predict output of new data
+            //var pred1 = model.predict(this.trainX);
+            var pred2 = model.Apply(npData, training: false);
+        }
+
+        float[,] ToFloat(double[,] matrix)
+        {
+            float[,] floatMatrix = new float[matrix.GetLength(0), matrix.GetLength(1)];
+            for (int i = 0; matrix.GetLength(0) > i; i++)
+            {
+                for (int j = 0; matrix.GetLength(1) > j; j++)
+                {
+                    floatMatrix[i,j] = (float)matrix[i,j];
+                }
+            }
+            return floatMatrix;
         }
     }
 }
