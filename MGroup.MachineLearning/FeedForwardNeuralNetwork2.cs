@@ -101,7 +101,7 @@ namespace MGroup.MachineLearning
             {
                 y = tf.cast(y, tf.int64);
                 //var loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels: y, logits: x);
-                var loss = tf.reduce_sum(tf.pow(x - y, 2.0f)) / (2.0f * trainY.GetLength(0));
+                var loss = tf.reduce_sum(tf.pow(x - y, 2.0f) / (2.0f * trainY.GetLength(0)));
                 //return tf.reduce_mean(loss);
                 return loss;
             };
@@ -131,16 +131,31 @@ namespace MGroup.MachineLearning
             // Run training for the given number of steps.
             foreach (var (step, (batch_x, batch_y)) in enumerate(train_data, 1))
             {
-                // Run the optimization to update W and b values.
-                run_optimization(batch_x, batch_y);
+                using var g = tf.GradientTape();
+                // Forward pass.
+                var pred = Apply(batch_x, training: true);
+                //var loss = cross_entropy_loss(pred, batch_y);
 
-                if (step % DisplayStep == 0)
-                {
-                    var pred = Apply(batch_x, training: true);
-                    var loss = cross_entropy_loss(pred, batch_y);
-                    var acc = accuracy(pred, batch_y);
-                    print($"step: {step}, loss: {(float)loss}, accuracy: {(float)acc}");
-                }
+                //var loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels: y, logits: x);
+                var loss = tf.pow(pred - tf.cast(batch_y, tf.int64), 2.0f) / (2.0f * trainY.GetLength(0));
+                //return tf.reduce_mean(loss);
+
+                // Compute gradients.
+                var gradients = g.gradient(loss, trainable_variables);
+
+                // Update W and b following gradients.
+                optimizer.apply_gradients(zip(gradients, trainable_variables.Select(x => x as ResourceVariable)));
+
+                //// Run the optimization to update W and b values.
+                //run_optimization(batch_x, batch_y);
+
+                //if (step % DisplayStep == 0)
+                //{
+                //    var pred = Apply(batch_x, training: true);
+                //    var loss = cross_entropy_loss(pred, batch_y);
+                //    var acc = accuracy(pred, batch_y);
+                //    print($"step: {step}, loss: {(float)loss}, accuracy: {(float)acc}");
+                //}
             }
         }
 

@@ -6,6 +6,9 @@ namespace MGroup.MachineLearning
 {
 	public interface INormalization
 	{
-		double[,] Normalize(double[,] X,int dim);
+
+		public void Initialize(double[,] X, int dim);
+
+		public double[,] Normalize(double[,] X);
 	}
 }

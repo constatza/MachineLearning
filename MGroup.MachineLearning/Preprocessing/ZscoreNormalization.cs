@@ -14,38 +14,42 @@ namespace MGroup.MachineLearning
 		public double[] meanValuePerDim { get; private set; }
 		public double[] stdValuePerDim { get; private set; }
 
-		public double[,] Normalize(double[,] rawData, int dim)
+        public void Initialize(double[,] data, int dim)
+        {
+			meanValuePerDim = new double[data.GetLength(0)];
+			stdValuePerDim = new double[data.GetLength(0)];
+			for (int row = 0; row < data.GetLength(0); row++)
+			{
+				for (int col = 0; col < data.GetLength(1); col++)
+				{
+					meanValuePerDim[row] += data[row, col];
+				}
+				meanValuePerDim[row] = meanValuePerDim[row] / data.GetLength(1);
+			}
+
+			for (int row = 0; row < data.GetLength(0); row++)
+			{
+				for (int col = 0; col < data.GetLength(1); col++)
+				{
+					stdValuePerDim[row] += Math.Pow(data[row, col] - meanValuePerDim[row], 2);
+				}
+				stdValuePerDim[row] = Math.Sqrt(stdValuePerDim[row] / (data.GetLength(1) - 1));
+			}
+		}
+
+        public double[,] Normalize(double[,] data)
 		{
-			double[,] scaledData = new double[rawData.GetLength(0), rawData.GetLength(1)];
-			double[] meanValuePerDim = new double[rawData.GetLength(0)];
-			double[] stdValuePerDim = new double[rawData.GetLength(0)];
-			for (int row = 0; row < rawData.GetLength(0); row++)
-			{
-				for (int col = 0; col < rawData.GetLength(1); col++)
-				{
-					meanValuePerDim[row] += rawData[row, col];
-				}
-				meanValuePerDim[row] = meanValuePerDim[row] / rawData.GetLength(1);
-			}
+			double[,] scaledData = new double[data.GetLength(0), data.GetLength(1)];
 
-			for (int row = 0; row < rawData.GetLength(0); row++)
+			for (int row = 0; row < data.GetLength(0); row++)
 			{
-				for (int col = 0; col < rawData.GetLength(1); col++)
+				for (int col = 0; col < data.GetLength(1); col++)
 				{
-					stdValuePerDim[row] += Math.Pow(rawData[row, col]- meanValuePerDim[row],2);
-				}
-				stdValuePerDim[row] = Math.Sqrt(stdValuePerDim[row] / (rawData.GetLength(1)-1));
-			}
-
-			for (int row = 0; row < rawData.GetLength(0); row++)
-			{
-				for (int col = 0; col < rawData.GetLength(1); col++)
-				{
-					scaledData[row, col] = (rawData[row, col] - meanValuePerDim[row]) / stdValuePerDim[row];
+					scaledData[row, col] = (data[row, col] - meanValuePerDim[row]) / stdValuePerDim[row];
 				}
 			}
 
 			return (scaledData);
 		}
-	}
+    }
 }

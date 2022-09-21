@@ -12,14 +12,15 @@ namespace MGroup.MachineLearning
 	/// </summary>
 	public class MinMaxNormalization : INormalization
 	{
-        public double[] minValuePerDim { get; private set; }
+		public double[] minValuePerDim { get; private set; }
 		public double[] maxValuePerDim { get; private set; }
+		public int dimension { get; private set; }
 
-		public double[,] Normalize(double[,] data, int dim)
+		public void Initialize(double[,] data, int dim)
 		{
-			if (dim == 0)
+			dimension = dim;
+			if (dimension == 0)
 			{
-				double[,] scaledData= new double[data.GetLength(0), data.GetLength(1)];
 				minValuePerDim = new double[data.GetLength(0)];
 				maxValuePerDim = new double[data.GetLength(0)];
 
@@ -41,22 +42,12 @@ namespace MGroup.MachineLearning
 						}
 					}
 				}
-
-				for (int row = 0; row < data.GetLength(0); row++)
-				{
-					for (int col = 0; col < data.GetLength(1); col++)
-					{
-						scaledData[row, col] = (data[row, col] - minValuePerDim[row]) / (maxValuePerDim[row] - minValuePerDim[row]);
-					}
-				}
-				return scaledData;
 			}
-            else if(dim == 1)
-            {
-				double[,] scaledData = new double[data.GetLength(0), data.GetLength(1)];
+			else if (dimension == 1)
+			{
 				minValuePerDim = new double[data.GetLength(1)];
-				maxValuePerDim = new double[data.GetLength(1)];		
-				
+				maxValuePerDim = new double[data.GetLength(1)];
+
 				for (int col = 0; col < data.GetLength(1); col++)
 				{
 					minValuePerDim[col] = double.MaxValue;
@@ -75,7 +66,25 @@ namespace MGroup.MachineLearning
 						}
 					}
 				}
+			}
+		}
 
+		public double[,] Normalize(double[,] data)
+		{
+			double[,] scaledData = new double[data.GetLength(0), data.GetLength(1)];
+			if (dimension == 0)
+			{
+				for (int row = 0; row < data.GetLength(0); row++)
+				{
+					for (int col = 0; col < data.GetLength(1); col++)
+					{
+						scaledData[row, col] = (data[row, col] - minValuePerDim[row]) / (maxValuePerDim[row] - minValuePerDim[row]);
+					}
+				}
+				return scaledData;
+			}
+			else if (dimension == 1)
+			{
 				for (int col = 0; col < data.GetLength(1); col++)
 				{
 					for (int row = 0; row < data.GetLength(0); row++)
@@ -86,14 +95,14 @@ namespace MGroup.MachineLearning
 				return scaledData;
 			}
 			else
-            {
+			{
 				throw new ArgumentException("parameter 'dim' should be 0 or 1");
-            }
+			}
 		}
 
-		public double[,] Denormalize(double[,] data, int dim)
+		public double[,] Denormalize(double[,] data)
 		{
-			if (dim == 0)
+			if (dimension == 0)
 			{
 				double[,] scaledData = new double[data.GetLength(0), data.GetLength(1)];
 				for (int row = 0; row < data.GetLength(0); row++)
@@ -105,7 +114,7 @@ namespace MGroup.MachineLearning
 				}
 				return scaledData;
 			}
-			else if (dim == 1)
+			else if (dimension == 1)
 			{
 				double[,] scaledData = new double[data.GetLength(0), data.GetLength(1)];
 				for (int col = 0; col < data.GetLength(1); col++)
