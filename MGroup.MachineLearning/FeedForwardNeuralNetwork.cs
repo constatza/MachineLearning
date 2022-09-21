@@ -57,14 +57,14 @@ namespace MGroup.MachineLearning
         {
             tf.enable_eager_execution();
 
-            if (Normalization != null) 
-            {   
+            if (Normalization != null)
+            {
                 if (testX != null)
                 {
-                    var trainAndTestX = new double[trainX.GetLength(0) + testX.GetLength(0),trainX.GetLength(1)];
+                    var trainAndTestX = new double[trainX.GetLength(0) + testX.GetLength(0), trainX.GetLength(1)];
                     trainX.CopyTo(trainAndTestX, 0);
                     testX.CopyTo(trainAndTestX, trainX.Length);
-                    Normalization.Initialize(trainAndTestX, dim : 1);
+                    Normalization.Initialize(trainAndTestX, dim: 1);
                     //
                     trainX = Normalization.Normalize(trainX);
                     testX = Normalization.Normalize(testX);
@@ -76,15 +76,15 @@ namespace MGroup.MachineLearning
                 }
             }
 
-            this.trainX = np.array(ToFloat(trainX));
-            this.trainY = np.array(ToFloat(trainY));
-            
+            this.trainX = np.array(DoubleToFloat(trainX));
+            this.trainY = np.array(DoubleToFloat(trainY));
+
             if (testX != null && testY != null)
             {
-                this.testX = np.array(ToFloat(testX));
-                this.testY = np.array(ToFloat(testY));
+                this.testX = np.array(DoubleToFloat(testX));
+                this.testY = np.array(DoubleToFloat(testY));
             }
-            
+
             var layers = new LayersApi();
 
             inputs = keras.Input(shape: trainX.GetLength(1)); // 0 or 1 ??
@@ -95,7 +95,7 @@ namespace MGroup.MachineLearning
             {
                 outputs = layers.Dense(NumNeuronsPerLayer[i], ActivationFunctionPerLayer[i]).Apply(outputs);
             }
-            
+
             outputs = layers.Dense(trainY.GetLength(1)).Apply(outputs);
 
             // build keras model
@@ -107,7 +107,7 @@ namespace MGroup.MachineLearning
             model.compile(loss: LossFunction,
                 optimizer: Optimizer,
                 metrics: new[] { "accuracy" });
-            
+
             // train the model
             model.fit(this.trainX, this.trainY, batch_size: BatchSize, epochs: Epochs);
 
@@ -116,7 +116,7 @@ namespace MGroup.MachineLearning
             {
                 model.evaluate(this.testX, this.testY, batch_size: BatchSize);
             }
-            
+
             // save and serialize model
             model.save("current_model");
 
@@ -130,9 +130,8 @@ namespace MGroup.MachineLearning
             {
                 (data) = Normalization.Normalize(data);
             }
-            var npData = np.array(ToFloat(data));
+            var npData = np.array(DoubleToFloat(data));
             // predict output of new data
-            //var pred1 = model.predict(this.trainX);
             var pred2 = model.Apply(npData, training: false);
         }
 
@@ -142,38 +141,62 @@ namespace MGroup.MachineLearning
             {
                 (data) = Normalization.Normalize(data);
             }
-            var npData  = np.array(ToFloat(data));
+            var npData = np.array(DoubleToFloat(data));
+            //var npData = trainX;
             //trainX = list(trainX);
             npData = (NDArray)tf.constant(npData);
+            var gradient = new float[trainY.GetShape().as_int_list()[1], trainX.GetShape().as_int_list()[1]];
             using var tape = tf.GradientTape();
             {
                 tape.watch(npData);
+
                 // Forward pass.
                 var pred = model.Apply(npData, training: false);
-                //var loss = cross_entropy_loss(pred, batch_y);
-
-                //var loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels: y, logits: x);
-                //var loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels: tf.cast(trainY, tf.int64), logits: pred));
-                var loss = tf.pow(pred - trainY, 2.0f);
-                //return tf.reduce_mean(loss);
-
-                // Compute gradients.
-                //var gradients1 = g.gradient(pred, model.trainable_variables);
-                var gradients2 = tape.gradient(pred, npData);
+                //Calculate gradient
+                var g = tape.gradient(pred, npData);
+                var g_temp = tf.squeeze(g).ToArray<float>();
+                gradient = Float1DtoFloat2D(g_temp, trainY.GetShape().as_int_list()[1], trainX.GetShape().as_int_list()[1]);
+                //return gradient;
             }
         }
 
-        float[,] ToFloat(double[,] matrix)
+        float[,] DoubleToFloat(double[,] matrix)
         {
             float[,] floatMatrix = new float[matrix.GetLength(0), matrix.GetLength(1)];
             for (int i = 0; matrix.GetLength(0) > i; i++)
             {
                 for (int j = 0; matrix.GetLength(1) > j; j++)
                 {
-                    floatMatrix[i,j] = (float)matrix[i,j];
+                    floatMatrix[i, j] = (float)matrix[i, j];
                 }
             }
             return floatMatrix;
+        }
+
+        double[,] FloatToDouble(float[,] matrix)
+        {
+            double[,] doubleMatrix = new double[matrix.GetLength(0), matrix.GetLength(1)];
+            for (int i = 0; matrix.GetLength(0) > i; i++)
+            {
+                for (int j = 0; matrix.GetLength(1) > j; j++)
+                {
+                    doubleMatrix[i, j] = (double)matrix[i, j];
+                }
+            }
+            return doubleMatrix;
+        }
+
+        private static float[,] Float1DtoFloat2D(float[] input, int height, int width)
+        {
+            float[,] output = new float[height, width];
+            for (int i = 0; i < height; i++)
+            {
+                for (int j = 0; j < width; j++)
+                {
+                    output[i, j] = input[i * width + j];
+                }
+            }
+            return output;
         }
     }
 }
