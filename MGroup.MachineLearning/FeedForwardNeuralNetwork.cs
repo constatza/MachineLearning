@@ -124,7 +124,7 @@ namespace MGroup.MachineLearning
             // model = keras.models.load_model("path_to_my_model");
         }
 
-        public void Predict(double[,] data)
+        public double[,] Predict(double[,] data)
         {
             if (Normalization != null)
             {
@@ -132,31 +132,44 @@ namespace MGroup.MachineLearning
             }
             var npData = np.array(DoubleToFloat(data));
             // predict output of new data
-            var pred2 = model.Apply(npData, training: false);
+            var resultSqueezed = tf.squeeze(model.Apply(npData, training: false)).ToArray<float>();
+            var result = new double[data.GetLength(0), trainY.GetShape().as_int_list()[1]];
+            for (int i = 0; i < result.GetLength(0); i++)
+            {
+                for (int j = 0; j < result.GetLength(1); j++)
+                {
+                    result[i, j] = resultSqueezed[trainY.GetShape().as_int_list()[1] * i + j];
+                }
+            }
+            return result;
         }
 
-        public void Gradient(double[,] data)
+        public double[,] Gradient(double[,] data)
         {
             if (Normalization != null)
             {
                 (data) = Normalization.Normalize(data);
             }
             var npData = np.array(DoubleToFloat(data));
-            //var npData = trainX;
-            //trainX = list(trainX);
             npData = (NDArray)tf.constant(npData);
-            var gradient = new float[trainY.GetShape().as_int_list()[1], trainX.GetShape().as_int_list()[1]];
-            using var tape = tf.GradientTape();
+            using var tape = tf.GradientTape(persistent: true);
             {
                 tape.watch(npData);
-
-                // Forward pass.
                 var pred = model.Apply(npData, training: false);
-                //Calculate gradient
-                var g = tape.gradient(pred, npData);
-                var g_temp = tf.squeeze(g).ToArray<float>();
-                gradient = Float1DtoFloat2D(g_temp, trainY.GetShape().as_int_list()[1], trainX.GetShape().as_int_list()[1]);
-                //return gradient;
+                var numRowsGrad = tf.size(pred).ToArray<int>()[0];
+                var numColsGrad = tf.size(npData).ToArray<int>()[0];
+                var slicedPred = new Tensor();
+                var gradient = new double[numRowsGrad, numColsGrad];
+                for (int i = 0; i < numRowsGrad; i++)
+                {
+                    slicedPred = tf.slice<int, int>(pred, new int[] { 0, i }, new int[] { 1, 1 });
+                    var slicedGrad = tape.gradient(slicedPred, npData).ToArray<float>();
+                    for (int j = 0; j < numColsGrad; j++)
+                    {
+                        gradient[i, j] = slicedGrad[j];
+                    }
+                }
+                return gradient;
             }
         }
 
@@ -184,19 +197,6 @@ namespace MGroup.MachineLearning
                 }
             }
             return doubleMatrix;
-        }
-
-        private static float[,] Float1DtoFloat2D(float[] input, int height, int width)
-        {
-            float[,] output = new float[height, width];
-            for (int i = 0; i < height; i++)
-            {
-                for (int j = 0; j < width; j++)
-                {
-                    output[i, j] = input[i * width + j];
-                }
-            }
-            return output;
         }
     }
 }

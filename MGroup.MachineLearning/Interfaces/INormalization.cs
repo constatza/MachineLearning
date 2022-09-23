@@ -10,5 +10,6 @@ namespace MGroup.MachineLearning
 		public void Initialize(double[,] X, int dim);
 
 		public double[,] Normalize(double[,] X);
+
 	}
 }
