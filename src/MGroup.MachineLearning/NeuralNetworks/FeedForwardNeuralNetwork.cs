@@ -13,10 +13,11 @@ using Tensorflow.Keras.Layers;
 using static Tensorflow.Binding;
 using static Tensorflow.KerasApi;
 using Tensorflow.Keras.Losses;
+using System.IO;
 
-namespace MGroup.MachineLearning
+namespace MGroup.MachineLearning.NeuralNetworks
 {
-    public class FeedForwardNeuralNetwork : Model
+    public class FeedForwardNeuralNetwork : INeuralNetwork
     {
         public INormalization Normalization { get; set; }
 
@@ -32,7 +33,9 @@ namespace MGroup.MachineLearning
         //Neural Network Architecture
         public int NumHiddenLayers { get; set; }
         public int[] NumNeuronsPerLayer { get; set; }
-        public Activation[] ActivationFunctionPerLayer { get; set; }
+        public string[] ActivationFunctionPerLayer { get; set; }
+
+        public int? seed;
 
         Model model;
         NDArray trainX;
@@ -40,7 +43,7 @@ namespace MGroup.MachineLearning
         NDArray trainY;
         NDArray testY;
 
-        public FeedForwardNeuralNetwork(ModelArgs? args = null) : base(args: new ModelArgs())
+        public FeedForwardNeuralNetwork()
         {
             Optimizer = keras.optimizers.Adam();
             LearningRate = 0.001;
@@ -49,8 +52,12 @@ namespace MGroup.MachineLearning
             DisplayStep = 100;
             NumHiddenLayers = 1;
             NumNeuronsPerLayer = new int[] { 1 };
-            ActivationFunctionPerLayer = new Activation[] { keras.activations.Linear };
+            ActivationFunctionPerLayer = new string[] { "linear" };
             Layer = new Layer[1] { keras.layers.Dense(NumNeuronsPerLayer[0], ActivationFunctionPerLayer[0]) };
+            if (seed != null)
+            {
+                tf.set_random_seed((int)seed);
+            }
         }
 
         public void Train(double[,] trainX, double[,] trainY, double[,] testX = null, double[,] testY = null)
@@ -85,11 +92,13 @@ namespace MGroup.MachineLearning
                 this.testY = np.array(DoubleToFloat(testY));
             }
 
+            keras.backend.clear_session();
+
             var layers = new LayersApi();
 
-            inputs = keras.Input(shape: trainX.GetLength(1)); // 0 or 1 ??
+            var inputs = keras.Input(shape: trainX.GetLength(1));
 
-            outputs = layers.Dense(NumNeuronsPerLayer[0], ActivationFunctionPerLayer[0]).Apply(inputs);
+            var outputs = layers.Dense(NumNeuronsPerLayer[0], ActivationFunctionPerLayer[0]).Apply(inputs);
 
             for (int i = 1; i < NumHiddenLayers; i++)
             {
@@ -116,12 +125,6 @@ namespace MGroup.MachineLearning
             {
                 model.evaluate(this.testX, this.testY, batch_size: BatchSize);
             }
-
-            // save and serialize model
-            model.save("current_model");
-
-            // recreate the exact same model purely from the file:
-            // model = keras.models.load_model("path_to_my_model");
         }
 
         public double[,] Predict(double[,] data)
@@ -171,6 +174,46 @@ namespace MGroup.MachineLearning
                 }
                 return gradient;
             }
+        }
+
+        public void SaveNetwork(string netPath, string weightsPath)
+        {
+            using (var writer = new StreamWriter(netPath))
+            {
+                writer.WriteLine($"{trainX.GetShape().as_int_list()[1]}");
+                for (int i = 0; i < NumHiddenLayers; i++)
+                {
+                    writer.WriteLine($"{NumNeuronsPerLayer[i]}");
+                    writer.WriteLine($"{ActivationFunctionPerLayer[i]}");
+                }
+                writer.WriteLine($"{trainY.GetShape().as_int_list()[1]}");
+            }
+            model.save_weights(weightsPath);
+        }
+
+        public void LoadNetwork(string netPath, string weightsPath)
+        {
+            keras.backend.clear_session();
+
+            var layers = new LayersApi();
+
+            var lines = File.ReadAllLines(netPath);
+
+            var inputs = keras.Input(shape: Convert.ToInt32(lines.First()));
+
+            var outputs = layers.Dense(Convert.ToInt32(lines[1]), lines[2]).Apply(inputs);
+
+            for (int i = 1; i < NumHiddenLayers; i++)
+            {
+                outputs = layers.Dense(Convert.ToInt32(lines[2 * i + 1]), lines[2 * i + 2]).Apply(outputs);
+            }
+
+            outputs = layers.Dense(Convert.ToInt32(lines.Last())).Apply(outputs);
+
+            // build keras model
+            model = keras.Model(inputs, outputs, name: "current_model");
+
+            model.load_weights(weightsPath);
         }
 
         float[,] DoubleToFloat(double[,] matrix)

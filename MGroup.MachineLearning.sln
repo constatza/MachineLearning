@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32526.322
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MGroup.MachineLearning", "MGroup.MachineLearning\MGroup.MachineLearning.csproj", "{6F0871F3-282A-481A-A01A-0550D6B866A1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MGroup.MachineLearning", "src\MGroup.MachineLearning\MGroup.MachineLearning.csproj", "{6F0871F3-282A-481A-A01A-0550D6B866A1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MGroup.MachineLearning.Tests", "MGroup.MachineLearning.Tests\MGroup.MachineLearning.Tests.csproj", "{15248E1E-C02E-4AAA-A2F1-7EB1FAE14654}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MGroup.Constitutive.Structural.MachineLearning", "src\MGroup.Constitutive.Structural.MachineLearning\MGroup.Constitutive.Structural.MachineLearning.csproj", "{918613C0-8364-49E7-9879-F4D5A7FF4AF8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MGroup.MachineLearning.Tests", "tests\MGroup.MachineLearning.Tests\MGroup.MachineLearning.Tests.csproj", "{15248E1E-C02E-4AAA-A2F1-7EB1FAE14654}"
 	ProjectSection(ProjectDependencies) = postProject
 		{6F0871F3-282A-481A-A01A-0550D6B866A1} = {6F0871F3-282A-481A-A01A-0550D6B866A1}
 	EndProjectSection
@@ -20,6 +22,10 @@ Global
 		{6F0871F3-282A-481A-A01A-0550D6B866A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6F0871F3-282A-481A-A01A-0550D6B866A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6F0871F3-282A-481A-A01A-0550D6B866A1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{918613C0-8364-49E7-9879-F4D5A7FF4AF8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{918613C0-8364-49E7-9879-F4D5A7FF4AF8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{918613C0-8364-49E7-9879-F4D5A7FF4AF8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{918613C0-8364-49E7-9879-F4D5A7FF4AF8}.Release|Any CPU.Build.0 = Release|Any CPU
 		{15248E1E-C02E-4AAA-A2F1-7EB1FAE14654}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{15248E1E-C02E-4AAA-A2F1-7EB1FAE14654}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{15248E1E-C02E-4AAA-A2F1-7EB1FAE14654}.Release|Any CPU.ActiveCfg = Release|Any CPU

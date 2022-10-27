@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace MGroup.MachineLearning
+namespace MGroup.MachineLearning.Preprocessing
 {
 	/// <summary>
 	/// Normalize the data using the
