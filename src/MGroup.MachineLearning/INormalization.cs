@@ -6,10 +6,14 @@ namespace MGroup.MachineLearning
 {
 	public interface INormalization
 	{
-		// dim is actually a flag (0: leave as is, 1: tranpose the input)
-		public void Initialize(double[,] X, int dim);
+        // dim is actually a flag (0: leave as is, 1: tranpose the input)
+        void Initialize(double[,] X, int dim);
 
-		public double[,] Normalize(double[,] X);
+        double[,] Normalize(double[,] X);
 
-	}
+        double[,] Denormalize(double[,] X);
+
+        double[] ScalingRatio { get; }
+
+    }
 }

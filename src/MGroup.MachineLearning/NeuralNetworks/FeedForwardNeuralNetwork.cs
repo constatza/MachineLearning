@@ -20,7 +20,8 @@ namespace MGroup.MachineLearning.NeuralNetworks
 {
     public class FeedForwardNeuralNetwork : INeuralNetwork
     {
-        public INormalization Normalization { get; set; }
+        public INormalization NormalizationX { get; set; }
+        public INormalization NormalizationY { get; set; }
 
         //Optimization Parameters
         public OptimizerV2 Optimizer { get; set; }
@@ -65,22 +66,41 @@ namespace MGroup.MachineLearning.NeuralNetworks
         {
             tf.enable_eager_execution();
 
-            if (Normalization != null)
+            if (NormalizationX != null)
             {
                 if (testX != null)
                 {
                     var trainAndTestX = new double[trainX.GetLength(0) + testX.GetLength(0), trainX.GetLength(1)];
                     trainX.CopyTo(trainAndTestX, 0);
                     testX.CopyTo(trainAndTestX, trainX.Length);
-                    Normalization.Initialize(trainAndTestX, dim: 1);
+                    NormalizationX.Initialize(trainAndTestX, dim: 1);
                     //
-                    trainX = Normalization.Normalize(trainX);
-                    testX = Normalization.Normalize(testX);
+                    trainX = NormalizationX.Normalize(trainX);
+                    testX = NormalizationX.Normalize(testX);
                 }
                 else
                 {
-                    Normalization.Initialize(trainX, dim: 1);
-                    trainX = Normalization.Normalize(trainX);
+                    NormalizationX.Initialize(trainX, dim: 1);
+                    trainX = NormalizationX.Normalize(trainX);
+                }
+            }
+
+            if (NormalizationY != null)
+            {
+                if (testX != null)
+                {
+                    var trainAndTestY = new double[trainY.GetLength(0) + testY.GetLength(0), trainY.GetLength(1)];
+                    trainY.CopyTo(trainAndTestY, 0);
+                    testY.CopyTo(trainAndTestY, trainY.Length);
+                    NormalizationY.Initialize(trainAndTestY, dim: 1);
+                    //
+                    trainY = NormalizationY.Normalize(trainY);
+                    testY = NormalizationY.Normalize(testY);
+                }
+                else
+                {
+                    NormalizationY.Initialize(trainY, dim: 1);
+                    trainY = NormalizationY.Normalize(trainY);
                 }
             }
 
@@ -120,7 +140,7 @@ namespace MGroup.MachineLearning.NeuralNetworks
                 metrics: new[] { "accuracy" });
 
             // train the model
-            model.fit(this.trainX, this.trainY, batch_size: BatchSize, epochs: Epochs);
+            model.fit(this.trainX, this.trainY, batch_size: BatchSize, epochs: Epochs, shuffle: false);
 
             // evaluate the model
             if (testX != null && testY != null)
@@ -131,51 +151,82 @@ namespace MGroup.MachineLearning.NeuralNetworks
 
         public double[,] Predict(double[,] data)
         {
-            if (Normalization != null)
+            if (NormalizationX != null)
             {
-                (data) = Normalization.Normalize(data);
+                (data) = NormalizationX.Normalize(data);
             }
-            var npData = np.array(data, TF_DataType.TF_DOUBLE);
+            var npData = np.array(data);
             // predict output of new data
-            var resultSqueezed = tf.squeeze(model.Apply(npData, training: false)).ToArray<double>();
-            var result = new double[data.GetLength(0), trainY.GetShape().as_int_list()[1]];
+            var resultFull = model.Apply(npData, training: false);
+            var resultSqueezed = tf.squeeze(resultFull).ToArray<double>();
+            var result = new double[data.GetLength(0), resultFull.shape.dims[1]]; //.GetShape().as_int_list()[1]];
             for (int i = 0; i < result.GetLength(0); i++)
             {
                 for (int j = 0; j < result.GetLength(1); j++)
                 {
-                    result[i, j] = resultSqueezed[trainY.GetShape().as_int_list()[1] * i + j];
+                    result[i, j] = resultSqueezed[resultFull.shape.dims[1] * i + j];
                 }
+            }
+            if (NormalizationY != null)
+            {
+                result = NormalizationY.Denormalize(result);
             }
             return result;
         }
 
-        public double[,] Gradient(double[,] data)
+        public double[][,] Gradient(double[,] data)
         {
-            if (Normalization != null)
+            if (NormalizationX != null)
             {
-                (data) = Normalization.Normalize(data);
+                (data) = NormalizationX.Normalize(data);
             }
-            var npData = np.array(data, TF_DataType.TF_DOUBLE);
-            npData = (NDArray)tf.constant(npData);
-            using var tape = tf.GradientTape(persistent: true);
+            var gradient = new double[data.GetLength(0)][,];
+            for (int k = 0; k < data.GetLength(0); k++)
             {
-                tape.watch(npData);
-                var pred = model.Apply(npData, training: false);
-                var numRowsGrad = tf.size(pred).ToArray<int>()[0];
-                var numColsGrad = tf.size(npData).ToArray<int>()[0];
-                var slicedPred = new Tensor();
-                var gradient = new double[numRowsGrad, numColsGrad];
-                for (int i = 0; i < numRowsGrad; i++)
+                var sample = new double[1, data.GetLength(1)];
+                for (int i = 0; i < data.GetLength(1); i++)
                 {
-                    slicedPred = tf.slice<int, int>(pred, new int[] { 0, i }, new int[] { 1, 1 });
-                    var slicedGrad = tape.gradient(slicedPred, npData).ToArray<double>();
-                    for (int j = 0; j < numColsGrad; j++)
+                    sample[0, i] = data[k, i];
+                }
+                var ratioX = new double[data.GetLength(1)];
+                if (NormalizationX != null)
+                {
+                    ratioX = NormalizationX.ScalingRatio;
+                }
+                var npSample = np.array(sample);
+                using var tape = tf.GradientTape(persistent: true);
+                {
+                    tape.watch(npSample);
+                    Tensor pred = model.Apply(npSample, training: false);
+                    var ratioY = new double[data.GetLength(1)];
+                    if (NormalizationY != null)
                     {
-                        gradient[i, j] = slicedGrad[j];
+                        ratioY = NormalizationY.ScalingRatio;
+                    }
+                    var numRowsGrad = pred.shape.dims[1];
+                    var numColsGrad = npSample.GetShape().as_int_list()[1];
+                    var slicedPred = new Tensor();
+                    gradient[k] = new double[numRowsGrad, numColsGrad];
+                    for (int i = 0; i < numRowsGrad; i++)
+                    {
+                        slicedPred = tf.slice<int, int>(pred, new int[] { 0, i }, new int[] { 1, 1 });
+                        var slicedGrad = tape.gradient(slicedPred, npSample).ToArray<double>();
+                        for (int j = 0; j < numColsGrad; j++)
+                        {
+                            gradient[k][i, j] = slicedGrad[j];
+                            if (NormalizationX != null)
+                            {
+                                gradient[k][i, j] = 1 / ratioX[j] * gradient[k][i, j];
+                            }
+                            if (NormalizationY != null)
+                            {
+                                gradient[k][i, j] = ratioY[i] * gradient[k][i, j];
+                            }
+                        }
                     }
                 }
-                return gradient;
             }
+            return gradient;
         }
 
         public void SaveNetwork(string netPath, string weightsPath)
@@ -191,12 +242,6 @@ namespace MGroup.MachineLearning.NeuralNetworks
                 writer.WriteLine($"{trainY.GetShape().as_int_list()[1]}");
             }
             model.save_weights(weightsPath);
-
-            using (var writer = new StreamWriter(netPath + ".2.xml"))
-            {
-                XmlSerializer serializer = new XmlSerializer(typeof(List<ILayer>));
-                serializer.Serialize(writer, model.Layers);
-            }
         }
 
         public void LoadNetwork(string netPath, string weightsPath)
@@ -222,32 +267,6 @@ namespace MGroup.MachineLearning.NeuralNetworks
             model = keras.Model(inputs, outputs, name: "current_model");
 
             model.load_weights(weightsPath);
-        }
-
-        float[,] DoubleToFloat_DEPRECATED(double[,] matrix)
-        {
-            float[,] floatMatrix = new float[matrix.GetLength(0), matrix.GetLength(1)];
-            for (int i = 0; matrix.GetLength(0) > i; i++)
-            {
-                for (int j = 0; matrix.GetLength(1) > j; j++)
-                {
-                    floatMatrix[i, j] = (float)matrix[i, j];
-                }
-            }
-            return floatMatrix;
-        }
-
-        double[,] FloatToDouble(float[,] matrix)
-        {
-            double[,] doubleMatrix = new double[matrix.GetLength(0), matrix.GetLength(1)];
-            for (int i = 0; matrix.GetLength(0) > i; i++)
-            {
-                for (int j = 0; matrix.GetLength(1) > j; j++)
-                {
-                    doubleMatrix[i, j] = (double)matrix[i, j];
-                }
-            }
-            return doubleMatrix;
         }
 
         private Activation GetActivationByName(string name)

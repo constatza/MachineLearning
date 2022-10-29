@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MGroup.Constitutive.Structural.MachineLearning.Continuum
+namespace MGroup.Constitutive.Structural.MachineLearning
 {
     internal class NeuralNetworkMaterial3D : IIsotropicContinuumMaterial3D
     {
@@ -58,7 +58,7 @@ namespace MGroup.Constitutive.Structural.MachineLearning.Continuum
             {
                 neuralNetworkInput[0, i] = materialParameters[i];
             }
-            return Matrix.CreateFromArray(neuralNetwork.Gradient(neuralNetworkInput));
+            return Matrix.CreateFromArray(neuralNetwork.Gradient(neuralNetworkInput)[0]);
         }
 
         private void CalculateNextStressStrainPoint()

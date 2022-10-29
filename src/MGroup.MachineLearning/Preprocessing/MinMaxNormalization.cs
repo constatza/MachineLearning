@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace MGroup.MachineLearning.Preprocessing
+namespace MGroup.MachineLearning
 {
 	/// <summary>
 	/// Normalize the data using the
@@ -15,8 +15,9 @@ namespace MGroup.MachineLearning.Preprocessing
 		public double[] minValuePerDim { get; private set; }
 		public double[] maxValuePerDim { get; private set; }
 		public int dimension { get; private set; }
+        public double[] ScalingRatio { get; private set; }
 
-		public void Initialize(double[,] data, int dim)
+        public void Initialize(double[,] data, int dim)
 		{
 			dimension = dim;
 			if (dimension == 0)
@@ -47,6 +48,7 @@ namespace MGroup.MachineLearning.Preprocessing
 			{
 				minValuePerDim = new double[data.GetLength(1)];
 				maxValuePerDim = new double[data.GetLength(1)];
+				ScalingRatio = new double[data.GetLength(1)];
 
 				for (int col = 0; col < data.GetLength(1); col++)
 				{
@@ -65,6 +67,8 @@ namespace MGroup.MachineLearning.Preprocessing
 							maxValuePerDim[col] = data[row, col];
 						}
 					}
+
+					ScalingRatio[col] = maxValuePerDim[col] - minValuePerDim[col];
 				}
 			}
 		}
@@ -98,33 +102,34 @@ namespace MGroup.MachineLearning.Preprocessing
 			{
 				throw new ArgumentException("parameter 'dim' should be 0 or 1");
 			}
+
 		}
 
-		public double[,] Denormalize(double[,] data)
+		public double[,] Denormalize(double[,] scaledData)
 		{
 			if (dimension == 0)
 			{
-				double[,] scaledData = new double[data.GetLength(0), data.GetLength(1)];
-				for (int row = 0; row < data.GetLength(0); row++)
+				double[,] data = new double[scaledData.GetLength(0), scaledData.GetLength(1)];
+				for (int row = 0; row < scaledData.GetLength(0); row++)
 				{
-					for (int col = 0; col < data.GetLength(1); col++)
+					for (int col = 0; col < scaledData.GetLength(1); col++)
 					{
-						scaledData[row, col] = data[row, col] * (maxValuePerDim[row] - minValuePerDim[row]) + minValuePerDim[row];
+						data[row, col] = scaledData[row, col] * (maxValuePerDim[row] - minValuePerDim[row]) + minValuePerDim[row];
 					}
 				}
-				return scaledData;
+				return data;
 			}
 			else if (dimension == 1)
 			{
-				double[,] scaledData = new double[data.GetLength(0), data.GetLength(1)];
-				for (int col = 0; col < data.GetLength(1); col++)
+				double[,] data = new double[scaledData.GetLength(0), scaledData.GetLength(1)];
+				for (int col = 0; col < scaledData.GetLength(1); col++)
 				{
-					for (int row = 0; col < data.GetLength(0); row++)
+					for (int row = 0; row < scaledData.GetLength(0); row++)
 					{
-						scaledData[row, col] = data[row, col] * (maxValuePerDim[col] - minValuePerDim[col]) + minValuePerDim[col];
+						data[row, col] = scaledData[row, col] * (maxValuePerDim[col] - minValuePerDim[col]) + minValuePerDim[col];
 					}
 				}
-				return scaledData;
+				return data;
 			}
 			else
 			{
