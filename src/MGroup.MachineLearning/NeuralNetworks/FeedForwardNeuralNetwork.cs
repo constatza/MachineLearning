@@ -14,6 +14,7 @@ using static Tensorflow.Binding;
 using static Tensorflow.KerasApi;
 using Tensorflow.Keras.Losses;
 using System.IO;
+using System.Xml.Serialization;
 
 namespace MGroup.MachineLearning.NeuralNetworks
 {
@@ -53,7 +54,7 @@ namespace MGroup.MachineLearning.NeuralNetworks
             NumHiddenLayers = 1;
             NumNeuronsPerLayer = new int[] { 1 };
             ActivationFunctionPerLayer = new string[] { "linear" };
-            Layer = new Layer[1] { keras.layers.Dense(NumNeuronsPerLayer[0], ActivationFunctionPerLayer[0]) };
+            Layer = new Layer[1] { new Dense(new DenseArgs() { Units = NumNeuronsPerLayer[0], Activation = KerasApi.keras.activations.Linear, DType = TF_DataType.TF_DOUBLE }) };
             if (seed != null)
             {
                 tf.set_random_seed((int)seed);
@@ -83,32 +84,33 @@ namespace MGroup.MachineLearning.NeuralNetworks
                 }
             }
 
-            this.trainX = np.array(DoubleToFloat(trainX));
-            this.trainY = np.array(DoubleToFloat(trainY));
+            this.trainX = np.array(trainX);
+            this.trainY = np.array(trainY);
 
             if (testX != null && testY != null)
             {
-                this.testX = np.array(DoubleToFloat(testX));
-                this.testY = np.array(DoubleToFloat(testY));
+                this.testX = np.array(testX, TF_DataType.TF_DOUBLE);
+                this.testY = np.array(testY, TF_DataType.TF_DOUBLE);
             }
 
             keras.backend.clear_session();
+            keras.backend.set_floatx(TF_DataType.TF_DOUBLE);
 
-            var layers = new LayersApi();
-
-            var inputs = keras.Input(shape: trainX.GetLength(1));
-
-            var outputs = layers.Dense(NumNeuronsPerLayer[0], ActivationFunctionPerLayer[0]).Apply(inputs);
+            var inputs = keras.Input(shape: trainX.GetLength(1), dtype: TF_DataType.TF_DOUBLE);
+            var outputs = new Dense(new DenseArgs() { Units = NumNeuronsPerLayer[0], Activation = GetActivationByName(ActivationFunctionPerLayer[0]), DType = TF_DataType.TF_DOUBLE })
+                .Apply(inputs);
 
             for (int i = 1; i < NumHiddenLayers; i++)
             {
-                outputs = layers.Dense(NumNeuronsPerLayer[i], ActivationFunctionPerLayer[i]).Apply(outputs);
+                outputs = new Dense(new DenseArgs() { Units = NumNeuronsPerLayer[i], Activation = GetActivationByName(ActivationFunctionPerLayer[i]), DType = TF_DataType.TF_DOUBLE })
+                    .Apply(outputs);
             }
 
-            outputs = layers.Dense(trainY.GetLength(1)).Apply(outputs);
+            outputs = new Dense(new DenseArgs() { Units = trainY.GetLength(1), Activation = GetActivationByName("linear"), DType = TF_DataType.TF_DOUBLE })
+                .Apply(outputs);
 
             // build keras model
-            model = keras.Model(inputs, outputs, name: "current_model");
+            model = new Keras.Model(inputs, outputs, "current_model");
             // show model summary
             model.summary();
 
@@ -133,9 +135,9 @@ namespace MGroup.MachineLearning.NeuralNetworks
             {
                 (data) = Normalization.Normalize(data);
             }
-            var npData = np.array(DoubleToFloat(data));
+            var npData = np.array(data, TF_DataType.TF_DOUBLE);
             // predict output of new data
-            var resultSqueezed = tf.squeeze(model.Apply(npData, training: false)).ToArray<float>();
+            var resultSqueezed = tf.squeeze(model.Apply(npData, training: false)).ToArray<double>();
             var result = new double[data.GetLength(0), trainY.GetShape().as_int_list()[1]];
             for (int i = 0; i < result.GetLength(0); i++)
             {
@@ -153,7 +155,7 @@ namespace MGroup.MachineLearning.NeuralNetworks
             {
                 (data) = Normalization.Normalize(data);
             }
-            var npData = np.array(DoubleToFloat(data));
+            var npData = np.array(data, TF_DataType.TF_DOUBLE);
             npData = (NDArray)tf.constant(npData);
             using var tape = tf.GradientTape(persistent: true);
             {
@@ -166,7 +168,7 @@ namespace MGroup.MachineLearning.NeuralNetworks
                 for (int i = 0; i < numRowsGrad; i++)
                 {
                     slicedPred = tf.slice<int, int>(pred, new int[] { 0, i }, new int[] { 1, 1 });
-                    var slicedGrad = tape.gradient(slicedPred, npData).ToArray<float>();
+                    var slicedGrad = tape.gradient(slicedPred, npData).ToArray<double>();
                     for (int j = 0; j < numColsGrad; j++)
                     {
                         gradient[i, j] = slicedGrad[j];
@@ -189,6 +191,12 @@ namespace MGroup.MachineLearning.NeuralNetworks
                 writer.WriteLine($"{trainY.GetShape().as_int_list()[1]}");
             }
             model.save_weights(weightsPath);
+
+            using (var writer = new StreamWriter(netPath + ".2.xml"))
+            {
+                XmlSerializer serializer = new XmlSerializer(typeof(List<ILayer>));
+                serializer.Serialize(writer, model.Layers);
+            }
         }
 
         public void LoadNetwork(string netPath, string weightsPath)
@@ -216,7 +224,7 @@ namespace MGroup.MachineLearning.NeuralNetworks
             model.load_weights(weightsPath);
         }
 
-        float[,] DoubleToFloat(double[,] matrix)
+        float[,] DoubleToFloat_DEPRECATED(double[,] matrix)
         {
             float[,] floatMatrix = new float[matrix.GetLength(0), matrix.GetLength(1)];
             for (int i = 0; matrix.GetLength(0) > i; i++)
@@ -240,6 +248,19 @@ namespace MGroup.MachineLearning.NeuralNetworks
                 }
             }
             return doubleMatrix;
+        }
+
+        private Activation GetActivationByName(string name)
+        {
+            return name switch
+            {
+                "linear" => KerasApi.keras.activations.Linear,
+                "relu" => KerasApi.keras.activations.Relu,
+                "sigmoid" => KerasApi.keras.activations.Sigmoid,
+                "tanh" => KerasApi.keras.activations.Tanh,
+                "softmax" => KerasApi.keras.activations.Softmax,
+                _ => throw new Exception("Activation " + name + " not found"),
+            };
         }
     }
 }

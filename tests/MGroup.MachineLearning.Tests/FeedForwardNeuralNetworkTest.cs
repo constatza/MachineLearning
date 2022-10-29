@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Linq;
 using Xunit;
-using Tensorflow.Keras;
 using static Tensorflow.KerasApi;
 using MGroup.MachineLearning.NeuralNetworks;
 
@@ -10,7 +8,7 @@ namespace MGroup.MachineLearning.Tests
     public class FeedForwardNeuralNetworkTest
     {
         [Fact]
-        private static void RunTest()
+        public static void RunTest()
         {
             //learning the polynomial : 0.5x^3+2x^2+x in x -> [-3,0.5]
 
@@ -31,7 +29,7 @@ namespace MGroup.MachineLearning.Tests
                 NumHiddenLayers = 2,
                 NumNeuronsPerLayer = new int[] { 50, 50},
                 Epochs = 5000,
-                Optimizer = keras.optimizers.Adam(0.005f),
+                Optimizer = new Keras.Optimizers.Adam(dataType: Tensorflow.TF_DataType.TF_DOUBLE, learning_rate: 0.005f),
                 LossFunction = keras.losses.MeanSquaredError(),
                 ActivationFunctionPerLayer = new string[] { "softmax", "softmax" },
                 //Normalization = new MinMaxNormalization(),
@@ -41,7 +39,7 @@ namespace MGroup.MachineLearning.Tests
 
             var prediction = neuralNetwork.Predict(testX);
 
-            //var gradient = neuralNetwork.Gradient(data);
+            // var gradient = neuralNetwork.Gradient(testX);
 
             CheckAccuracy(testY, prediction);
         }
@@ -59,7 +57,7 @@ namespace MGroup.MachineLearning.Tests
                 }
             }           
             norm = Math.Sqrt(norm);
-            Assert.True(norm < 0.03);
+            Assert.True(norm < 0.03, $"Norm was above threshold (norm value: {norm})");
         }
     }
 }
