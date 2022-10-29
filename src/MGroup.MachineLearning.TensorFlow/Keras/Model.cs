@@ -4,7 +4,7 @@ using Tensorflow;
 using Tensorflow.Keras.ArgsDefinition;
 using Tensorflow.Keras.Engine;
 
-namespace MGroup.MachineLearning.Keras
+namespace MGroup.MachineLearning.TensorFlow.Keras
 {
     public class Model : Functional
     {

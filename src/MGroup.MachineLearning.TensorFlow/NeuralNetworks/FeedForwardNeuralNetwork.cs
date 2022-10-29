@@ -15,8 +15,9 @@ using static Tensorflow.KerasApi;
 using Tensorflow.Keras.Losses;
 using System.IO;
 using System.Xml.Serialization;
+using MGroup.MachineLearning.Preprocessing;
 
-namespace MGroup.MachineLearning.NeuralNetworks
+namespace MGroup.MachineLearning.TensorFlow.NeuralNetworks
 {
     public class FeedForwardNeuralNetwork : INeuralNetwork
     {

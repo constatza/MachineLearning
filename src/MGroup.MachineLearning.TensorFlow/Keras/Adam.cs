@@ -7,7 +7,7 @@ using Tensorflow.Keras.Optimizers;
 using Tensorflow.Keras.Utils;
 using Tensorflow.Operations.Initializers;
 
-namespace MGroup.MachineLearning.Keras.Optimizers
+namespace MGroup.MachineLearning.TensorFlow.Keras.Optimizers
 {
     //
     // Summary:

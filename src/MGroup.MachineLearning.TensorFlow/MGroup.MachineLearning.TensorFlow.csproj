@@ -10,4 +10,20 @@
     <PackageIconUrl>https://github.com/mgroupntua/MachineLearning/raw/develop/MGroupMachineLearning.png</PackageIconUrl>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="Preprocessing\**" />
+    <EmbeddedResource Remove="Preprocessing\**" />
+    <None Remove="Preprocessing\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SciSharp.TensorFlow.Redist" Version="2.7.0" />
+    <PackageReference Include="TensorFlow.Keras" Version="0.7.0" />
+    <PackageReference Include="TensorFlow.NET" Version="0.70.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MGroup.MachineLearning\MGroup.MachineLearning.csproj" />
+  </ItemGroup>
+
 </Project>

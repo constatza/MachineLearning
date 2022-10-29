@@ -1,7 +1,8 @@
 ﻿using System;
 using Xunit;
 using static Tensorflow.KerasApi;
-using MGroup.MachineLearning.NeuralNetworks;
+using MGroup.MachineLearning.TensorFlow.NeuralNetworks;
+using MGroup.MachineLearning.Preprocessing;
 
 namespace MGroup.MachineLearning.Tests
 {
@@ -29,7 +30,7 @@ namespace MGroup.MachineLearning.Tests
                 NumHiddenLayers = 2,
                 NumNeuronsPerLayer = new int[] { 50, 50},
                 Epochs = 5000,
-                Optimizer = new Keras.Optimizers.Adam(dataType: Tensorflow.TF_DataType.TF_DOUBLE, learning_rate: 0.005f),
+                Optimizer = new TensorFlow.Keras.Optimizers.Adam(dataType: Tensorflow.TF_DataType.TF_DOUBLE, learning_rate: 0.005f),
                 LossFunction = keras.losses.MeanSquaredError(),
                 ActivationFunctionPerLayer = new string[] { "softmax", "softmax" },
                 NormalizationX = new MinMaxNormalization(),

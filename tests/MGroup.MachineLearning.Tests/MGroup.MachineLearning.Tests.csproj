@@ -23,8 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\MGroup.Constitutive.Structural.MachineLearning\MGroup.Constitutive.Structural.MachineLearning.csproj" />
-    <ProjectReference Include="..\..\src\MGroup.MachineLearning\MGroup.MachineLearning.csproj" />
+    <ProjectReference Include="..\..\src\MGroup.MachineLearning.TensorFlow\MGroup.MachineLearning.TensorFlow.csproj" />
   </ItemGroup>
 
 </Project>

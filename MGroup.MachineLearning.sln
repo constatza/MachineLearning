@@ -7,6 +7,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{B0C87C19-1B5
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MGroup.MachineLearning", "src\MGroup.MachineLearning\MGroup.MachineLearning.csproj", "{6F0871F3-282A-481A-A01A-0550D6B866A1}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MGroup.MachineLearning.TensorFlow", "src\MGroup.MachineLearning.TensorFlow\MGroup.MachineLearning.TensorFlow.csproj", "{6F0871F3-282A-481A-A01A-0550D6B866A2}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MGroup.Constitutive.Structural.MachineLearning", "src\MGroup.Constitutive.Structural.MachineLearning\MGroup.Constitutive.Structural.MachineLearning.csproj", "{918613C0-8364-49E7-9879-F4D5A7FF4AF8}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{B6EF0323-3F6B-42DA-A3AE-D4F3696C3442}"
@@ -23,6 +25,10 @@ Global
 		{6F0871F3-282A-481A-A01A-0550D6B866A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6F0871F3-282A-481A-A01A-0550D6B866A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6F0871F3-282A-481A-A01A-0550D6B866A1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6F0871F3-282A-481A-A01A-0550D6B866A2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F0871F3-282A-481A-A01A-0550D6B866A2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F0871F3-282A-481A-A01A-0550D6B866A2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F0871F3-282A-481A-A01A-0550D6B866A2}.Release|Any CPU.Build.0 = Release|Any CPU
 		{918613C0-8364-49E7-9879-F4D5A7FF4AF8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{918613C0-8364-49E7-9879-F4D5A7FF4AF8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{918613C0-8364-49E7-9879-F4D5A7FF4AF8}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -37,6 +43,7 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{6F0871F3-282A-481A-A01A-0550D6B866A1} = {B0C87C19-1B55-4255-ADC8-97FC240EB363}
+		{6F0871F3-282A-481A-A01A-0550D6B866A2} = {B0C87C19-1B55-4255-ADC8-97FC240EB363}
 		{918613C0-8364-49E7-9879-F4D5A7FF4AF8} = {B0C87C19-1B55-4255-ADC8-97FC240EB363}
 		{15248E1E-C02E-4AAA-A2F1-7EB1FAE14654} = {B6EF0323-3F6B-42DA-A3AE-D4F3696C3442}
 	EndGlobalSection
