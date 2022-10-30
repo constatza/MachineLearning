@@ -15,7 +15,7 @@ namespace MGroup.MachineLearning.Preprocessing
 		public double[] StandardDeviationPerDirection { get; private set; }
         public NormalizationDirection NormalizationDirection { get; private set; }
 
-        public double[] ScalingRatio => throw new NotImplementedException();
+        public double[] ScalingRatio => StandardDeviationPerDirection;
 
         public void Initialize(double[,] data, NormalizationDirection direction)
         {
