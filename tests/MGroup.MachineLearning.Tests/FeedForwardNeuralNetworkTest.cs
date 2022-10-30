@@ -12,7 +12,6 @@ namespace MGroup.MachineLearning.Tests
         public static void RunTest()
         {
             //learning the polynomial : f(x)=0.5x^3+2x^2+x in x -> [-3,0.5], f'(x)=1.5x^2+4x+1
-
             double[,] trainX = { { -3 }, { -2.90000000000000 }, { -2.80000000000000 }, { -2.70000000000000 }, { -2.60000000000000 }, { -2.50000000000000 }, { -2.40000000000000 }, { -2.30000000000000 }, { -2.20000000000000 }, { -2.10000000000000 }, { -2 }, { -1.90000000000000 }, { -1.80000000000000 }, { -1.70000000000000 }, { -1.60000000000000 }, { -1.50000000000000 }, { -1.40000000000000 }, { -1.30000000000000 }, { -1.20000000000000 }, { -1.10000000000000 },
                 { -1 }, { -0.900000000000000 }, { -0.800000000000000 }, { -0.700000000000000 }, { -0.600000000000000 }, { -0.500000000000000 }, { -0.400000000000000 }, { -0.300000000000000 }, { -0.200000000000000 }, { -0.100000000000000 }, { 0 }, { 0.100000000000000 }, { 0.200000000000000 }, { 0.300000000000000 }, { 0.400000000000000 }, { 0.500000000000000 } };
 
@@ -25,27 +24,19 @@ namespace MGroup.MachineLearning.Tests
 
             double[][,] testGradient = { new double[1, 1] { { 1.5600 } }, new double[1, 1] { { -1.0394 } }, new double[1, 1] { { -1.6046 } }, new double[1, 1] { { 1.9994 } } };
 
-            var neuralNetwork = new FeedForwardNeuralNetwork()
-            {               
-                NumHiddenLayers = 2,
-                NumNeuronsPerLayer = new int[] { 50, 50},
-                Epochs = 5000,
-                Optimizer = new TensorFlow.Keras.Optimizers.Adam(dataType: Tensorflow.TF_DataType.TF_DOUBLE, learning_rate: 0.005f),
-                LossFunction = keras.losses.MeanSquaredError(),
-                ActivationFunctionPerLayer = new string[] { "softmax", "softmax" },
-                NormalizationX = new MinMaxNormalization(),
-                NormalizationY = new MinMaxNormalization(),
-                seed = 1,
-            };
+            var neuralNetwork = new FeedForwardNeuralNetwork(new MinMaxNormalization(), new MinMaxNormalization(),
+                new TensorFlow.Keras.Optimizers.Adam(dataType: Tensorflow.TF_DataType.TF_DOUBLE, learning_rate: 0.005f),
+                keras.losses.MeanSquaredError(), new[]
+                {
+                    new NeuralNetworkLayerParameter(50, ActivationType.SoftMax),
+                    new NeuralNetworkLayerParameter(50, ActivationType.SoftMax),
+                }, 
+                5000);
 
             neuralNetwork.Train(trainX, trainY);
-
             var prediction = neuralNetwork.Predict(testX);
-
             var gradient = neuralNetwork.Gradient(testX);
-
             CheckPredictionAccuracy(testY, prediction);
-
             CheckGradientAccuracy(testGradient, gradient);
         }
 

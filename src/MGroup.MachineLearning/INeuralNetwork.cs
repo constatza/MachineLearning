@@ -7,6 +7,8 @@ namespace MGroup.MachineLearning
     // for each double[] => rows: input quantity, columns: input dimension
     public interface INeuralNetwork
 	{
+        IEnumerable<NeuralNetworkLayerParameter> NeuralNetworkLayerParameters { get; }
+
         // TrainX: input (stimulus)
         // TrainY: output (response)
         // TestX and TestY, to be removed
