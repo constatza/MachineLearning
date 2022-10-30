@@ -7,7 +7,7 @@ using Tensorflow.Keras.Optimizers;
 using Tensorflow;
 using Tensorflow.Keras.Utils;
 
-namespace MGroup.MachineLearning.TensorFlow.Keras
+namespace MGroup.MachineLearning.TensorFlow.Keras.Optimizers
 {
     public class SGD : OptimizerV2
     {
