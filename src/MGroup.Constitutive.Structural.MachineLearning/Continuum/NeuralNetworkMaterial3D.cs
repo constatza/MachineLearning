@@ -58,7 +58,7 @@ namespace MGroup.Constitutive.Structural.MachineLearning
             {
                 neuralNetworkInput[0, i] = materialParameters[i];
             }
-            return Matrix.CreateFromArray(neuralNetwork.Gradient(neuralNetworkInput)[0]);
+            return Matrix.CreateFromArray(neuralNetwork.EvaluateResponseGradients(neuralNetworkInput)[0]);
         }
 
         private void CalculateNextStressStrainPoint()
@@ -77,7 +77,7 @@ namespace MGroup.Constitutive.Structural.MachineLearning
             {
                 neuralNetworkInput[0, i] = materialParameters[i];
             }
-            var stressesTotal = neuralNetwork.Predict(neuralNetworkInput);
+            var stressesTotal = neuralNetwork.EvaluateResponses(neuralNetworkInput);
             this.stressesNew = new double[6] { stressesTotal[0, 0], stressesTotal[0, 1], stressesTotal[0, 2], stressesTotal[0, 3], stressesTotal[0, 4], stressesTotal[0, 5]};
             this.strainsNew = totalStrains.Copy();
         }

@@ -9,17 +9,11 @@ namespace MGroup.MachineLearning
 	{
         IEnumerable<NeuralNetworkLayerParameter> NeuralNetworkLayerParameters { get; }
 
-        // TrainX: input (stimulus)
-        // TrainY: output (response)
-        // TestX and TestY, to be removed
-        void Train(double[,] trainX, double[,] trainY, double[,] testX, double[,] testY);
-
-        double[,] Predict(double[,] data);
-
-        double[][,] Gradient(double[,] data);
-
-        void SaveNetwork(string netPath, string weightsPath);
+        void Train(double[,] stimuli, double[,] responses);
+        double[,] EvaluateResponses(double[,] data);
+        double[][,] EvaluateResponseGradients(double[,] stimuli);
 
         void LoadNetwork(string netPath, string weightsPath);
+        void SaveNetwork(string netPath, string weightsPath);
     }
 }

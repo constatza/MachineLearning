@@ -49,6 +49,8 @@ namespace MGroup.MachineLearning.TensorFlow.NeuralNetworks
             }
         }
 
+        public void Train(double[,] stimuli, double[,] responses) => Train(stimuli, responses, null, null);
+
         public void Train(double[,] trainX, double[,] trainY, double[,] testX = null, double[,] testY = null)
         {
             tf.enable_eager_execution();
@@ -142,84 +144,91 @@ namespace MGroup.MachineLearning.TensorFlow.NeuralNetworks
             }
         }
 
-        public double[,] Predict(double[,] data)
+        public double[,] EvaluateResponses(double[,] stimuli)
         {
             if (NormalizationX != null)
             {
-                (data) = NormalizationX.Normalize(data);
+                stimuli = NormalizationX.Normalize(stimuli);
             }
-            var npData = np.array(data);
-            // predict output of new data
+
+            var npData = np.array(stimuli);
             var resultFull = model.Apply(npData, training: false);
             var resultSqueezed = tf.squeeze(resultFull).ToArray<double>();
-            var result = new double[data.GetLength(0), resultFull.shape.dims[1]]; //.GetShape().as_int_list()[1]];
-            for (int i = 0; i < result.GetLength(0); i++)
+            var responses = new double[stimuli.GetLength(0), resultFull.shape.dims[1]]; //.GetShape().as_int_list()[1]];
+            for (int i = 0; i < responses.GetLength(0); i++)
             {
-                for (int j = 0; j < result.GetLength(1); j++)
+                for (int j = 0; j < responses.GetLength(1); j++)
                 {
-                    result[i, j] = resultSqueezed[resultFull.shape.dims[1] * i + j];
+                    responses[i, j] = resultSqueezed[resultFull.shape.dims[1] * i + j];
                 }
             }
+
             if (NormalizationY != null)
             {
-                result = NormalizationY.Denormalize(result);
+                responses = NormalizationY.Denormalize(responses);
             }
-            return result;
+
+            return responses;
         }
 
-        public double[][,] Gradient(double[,] data)
+        public double[][,] EvaluateResponseGradients(double[,] stimuli)
         {
             if (NormalizationX != null)
             {
-                (data) = NormalizationX.Normalize(data);
+                stimuli = NormalizationX.Normalize(stimuli);
             }
-            var gradient = new double[data.GetLength(0)][,];
-            for (int k = 0; k < data.GetLength(0); k++)
+
+            var responseGradients = new double[stimuli.GetLength(0)][,];
+            for (int k = 0; k < stimuli.GetLength(0); k++)
             {
-                var sample = new double[1, data.GetLength(1)];
-                for (int i = 0; i < data.GetLength(1); i++)
+                var sample = new double[1, stimuli.GetLength(1)];
+                for (int i = 0; i < stimuli.GetLength(1); i++)
                 {
-                    sample[0, i] = data[k, i];
+                    sample[0, i] = stimuli[k, i];
                 }
-                var ratioX = new double[data.GetLength(1)];
+
+                var ratioX = new double[stimuli.GetLength(1)];
                 if (NormalizationX != null)
                 {
                     ratioX = NormalizationX.ScalingRatio;
                 }
+
                 var npSample = np.array(sample);
                 using var tape = tf.GradientTape(persistent: true);
                 {
                     tape.watch(npSample);
                     Tensor pred = model.Apply(npSample, training: false);
-                    var ratioY = new double[data.GetLength(1)];
+                    var ratioY = new double[stimuli.GetLength(1)];
                     if (NormalizationY != null)
                     {
                         ratioY = NormalizationY.ScalingRatio;
                     }
+
                     var numRowsGrad = pred.shape.dims[1];
                     var numColsGrad = npSample.GetShape().as_int_list()[1];
                     var slicedPred = new Tensor();
-                    gradient[k] = new double[numRowsGrad, numColsGrad];
+                    responseGradients[k] = new double[numRowsGrad, numColsGrad];
                     for (int i = 0; i < numRowsGrad; i++)
                     {
                         slicedPred = tf.slice<int, int>(pred, new int[] { 0, i }, new int[] { 1, 1 });
                         var slicedGrad = tape.gradient(slicedPred, npSample).ToArray<double>();
                         for (int j = 0; j < numColsGrad; j++)
                         {
-                            gradient[k][i, j] = slicedGrad[j];
+                            responseGradients[k][i, j] = slicedGrad[j];
                             if (NormalizationX != null)
                             {
-                                gradient[k][i, j] = 1 / ratioX[j] * gradient[k][i, j];
+                                responseGradients[k][i, j] = 1 / ratioX[j] * responseGradients[k][i, j];
                             }
                             if (NormalizationY != null)
                             {
-                                gradient[k][i, j] = ratioY[i] * gradient[k][i, j];
+                                responseGradients[k][i, j] = ratioY[i] * responseGradients[k][i, j];
                             }
                         }
                     }
                 }
             }
-            return gradient;
+
+            return responseGradients;
         }
 
         public void SaveNetwork(string netPath, string weightsPath)
