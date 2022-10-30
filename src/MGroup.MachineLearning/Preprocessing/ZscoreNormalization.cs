@@ -9,59 +9,59 @@ namespace MGroup.MachineLearning.Preprocessing
 	/// Z-score normalization so that
 	/// their values have zero mean and unit variance.
 	/// </summary>
-	public class ZscoreNormalization : INormalization
+	public class ZScoreNormalization : INormalization
 	{
-		public double[] meanValuePerDim { get; private set; }
-		public double[] stdValuePerDim { get; private set; }
-		public int dimension { get; private set; }
+		public double[] MeanValuePerDirection { get; private set; }
+		public double[] StandardDeviationPerDirection { get; private set; }
+        public NormalizationDirection NormalizationDirection { get; private set; }
 
         public double[] ScalingRatio => throw new NotImplementedException();
 
-        public void Initialize(double[,] data, int dim)
+        public void Initialize(double[,] data, NormalizationDirection direction)
         {
-			dimension = dim;
-			if (dimension == 0)
-			{
-				meanValuePerDim = new double[data.GetLength(0)];
-				stdValuePerDim = new double[data.GetLength(0)];
+            NormalizationDirection = direction;
+            if (NormalizationDirection == NormalizationDirection.PerRow)
+            {
+                MeanValuePerDirection = new double[data.GetLength(0)];
+				StandardDeviationPerDirection = new double[data.GetLength(0)];
 				for (int row = 0; row < data.GetLength(0); row++)
 				{
 					for (int col = 0; col < data.GetLength(1); col++)
 					{
-						meanValuePerDim[row] += data[row, col];
+						MeanValuePerDirection[row] += data[row, col];
 					}
-					meanValuePerDim[row] = meanValuePerDim[row] / data.GetLength(1);
+					MeanValuePerDirection[row] = MeanValuePerDirection[row] / data.GetLength(1);
 				}
 
 				for (int row = 0; row < data.GetLength(0); row++)
 				{
 					for (int col = 0; col < data.GetLength(1); col++)
 					{
-						stdValuePerDim[row] += Math.Pow(data[row, col] - meanValuePerDim[row], 2);
+						StandardDeviationPerDirection[row] += Math.Pow(data[row, col] - MeanValuePerDirection[row], 2);
 					}
-					stdValuePerDim[row] = Math.Sqrt(stdValuePerDim[row] / (data.GetLength(1) - 1));
+					StandardDeviationPerDirection[row] = Math.Sqrt(StandardDeviationPerDirection[row] / (data.GetLength(1) - 1));
 				}
 			}
-			else if(dimension == 1)
+            else if (NormalizationDirection == NormalizationDirection.PerColumn)
             {
-				meanValuePerDim = new double[data.GetLength(1)];
-				stdValuePerDim = new double[data.GetLength(1)];
+                MeanValuePerDirection = new double[data.GetLength(1)];
+				StandardDeviationPerDirection = new double[data.GetLength(1)];
 				for (int col = 0; col < data.GetLength(1); col++)
 				{
 					for (int row = 0; row < data.GetLength(0); row++)
 					{
-						meanValuePerDim[col] += data[row, col];
+						MeanValuePerDirection[col] += data[row, col];
 					}
-					meanValuePerDim[col] = meanValuePerDim[col] / data.GetLength(0);
+					MeanValuePerDirection[col] = MeanValuePerDirection[col] / data.GetLength(0);
 				}
 
 				for (int col = 0; col < data.GetLength(1); col++)
 				{
 					for (int row = 0; row < data.GetLength(0); row++)
 					{
-						stdValuePerDim[col] += Math.Pow(data[row, col] - meanValuePerDim[col], 2);
+						StandardDeviationPerDirection[col] += Math.Pow(data[row, col] - MeanValuePerDirection[col], 2);
 					}
-					stdValuePerDim[col] = Math.Sqrt(stdValuePerDim[col] / (data.GetLength(0) - 1));
+					StandardDeviationPerDirection[col] = Math.Sqrt(StandardDeviationPerDirection[col] / (data.GetLength(0) - 1));
 				}
 			}
 		}
@@ -70,60 +70,64 @@ namespace MGroup.MachineLearning.Preprocessing
 		{
 			double[,] scaledData = new double[data.GetLength(0), data.GetLength(1)];
 
-			if (dimension == 0)
-			{
-				for (int row = 0; row < data.GetLength(0); row++)
+            if (NormalizationDirection == NormalizationDirection.PerRow)
+            {
+                for (int row = 0; row < data.GetLength(0); row++)
 				{
 					for (int col = 0; col < data.GetLength(1); col++)
 					{
-						scaledData[row, col] = (data[row, col] - meanValuePerDim[row]) / stdValuePerDim[row];
+						scaledData[row, col] = (data[row, col] - MeanValuePerDirection[row]) / StandardDeviationPerDirection[row];
 					}
 				}
 			}
-			else if (dimension == 1)
-			{
-				for (int col = 0; col < data.GetLength(1); col++)
+            else if (NormalizationDirection == NormalizationDirection.PerColumn)
+            {
+                for (int col = 0; col < data.GetLength(1); col++)
 				{
 					for (int row = 0; row < data.GetLength(0); row++)
 					{
-						scaledData[row, col] = (data[row, col] - meanValuePerDim[col]) / stdValuePerDim[col];
+						scaledData[row, col] = (data[row, col] - MeanValuePerDirection[col]) / StandardDeviationPerDirection[col];
 					}
 				}
 			}
+            else
+            {
+                throw new ArgumentException("NormalizationDirection should be either PerRow or PerColumn");
+            }
 
-			return (scaledData);
+            return (scaledData);
 		}
 
 		public double[,] Denormalize(double[,] scaledData)
 		{
-			if (dimension == 0)
-			{
-				double[,] data = new double[scaledData.GetLength(0), scaledData.GetLength(1)];
+            if (NormalizationDirection == NormalizationDirection.PerRow)
+            {
+                double[,] data = new double[scaledData.GetLength(0), scaledData.GetLength(1)];
 				for (int row = 0; row < scaledData.GetLength(0); row++)
 				{
 					for (int col = 0; col < scaledData.GetLength(1); col++)
 					{
-						data[row, col] = scaledData[row, col] * stdValuePerDim[row] + meanValuePerDim[row];
+						data[row, col] = scaledData[row, col] * StandardDeviationPerDirection[row] + MeanValuePerDirection[row];
 					}
 				}
 				return data;
 			}
-			else if (dimension == 1)
-			{
-				double[,] data = new double[scaledData.GetLength(0), scaledData.GetLength(1)];
+            else if (NormalizationDirection == NormalizationDirection.PerColumn)
+            {
+                double[,] data = new double[scaledData.GetLength(0), scaledData.GetLength(1)];
 				for (int col = 0; col < scaledData.GetLength(1); col++)
 				{
 					for (int row = 0; row < scaledData.GetLength(0); row++)
 					{
-						data[row, col] = scaledData[row, col] * stdValuePerDim[col] + meanValuePerDim[col];
+						data[row, col] = scaledData[row, col] * StandardDeviationPerDirection[col] + MeanValuePerDirection[col];
 					}
 				}
 				return data;
 			}
 			else
 			{
-				throw new ArgumentException("parameter 'dim' should be 0 or 1");
-			}
-		}
+                throw new ArgumentException("NormalizationDirection should be either PerRow or PerColumn");
+            }
+        }
 	}
 }

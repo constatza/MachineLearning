@@ -60,14 +60,14 @@ namespace MGroup.MachineLearning.TensorFlow.NeuralNetworks
                     var trainAndTestX = new double[trainX.GetLength(0) + testX.GetLength(0), trainX.GetLength(1)];
                     trainX.CopyTo(trainAndTestX, 0);
                     testX.CopyTo(trainAndTestX, trainX.Length);
-                    NormalizationX.Initialize(trainAndTestX, dim: 1);
+                    NormalizationX.Initialize(trainAndTestX, NormalizationDirection.PerColumn);
                     //
                     trainX = NormalizationX.Normalize(trainX);
                     testX = NormalizationX.Normalize(testX);
                 }
                 else
                 {
-                    NormalizationX.Initialize(trainX, dim: 1);
+                    NormalizationX.Initialize(trainX, NormalizationDirection.PerColumn);
                     trainX = NormalizationX.Normalize(trainX);
                 }
             }
@@ -79,14 +79,14 @@ namespace MGroup.MachineLearning.TensorFlow.NeuralNetworks
                     var trainAndTestY = new double[trainY.GetLength(0) + testY.GetLength(0), trainY.GetLength(1)];
                     trainY.CopyTo(trainAndTestY, 0);
                     testY.CopyTo(trainAndTestY, trainY.Length);
-                    NormalizationY.Initialize(trainAndTestY, dim: 1);
+                    NormalizationY.Initialize(trainAndTestY, NormalizationDirection.PerColumn);
                     //
                     trainY = NormalizationY.Normalize(trainY);
                     testY = NormalizationY.Normalize(testY);
                 }
                 else
                 {
-                    NormalizationY.Initialize(trainY, dim: 1);
+                    NormalizationY.Initialize(trainY, NormalizationDirection.PerColumn);
                     trainY = NormalizationY.Normalize(trainY);
                 }
             }
