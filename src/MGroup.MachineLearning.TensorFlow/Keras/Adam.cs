@@ -35,17 +35,17 @@ namespace MGroup.MachineLearning.TensorFlow.Keras.Optimizers
 
         protected override void _create_slots(IVariableV1[] var_list)
         {
-            var doubleZeros = new Zeros(dtype: dataType);
+            var dataTypeZeros = new Zeros(dtype: dataType);
             IVariableV1[] array = var_list;
             foreach (IVariableV1 var in array)
             {
-                add_slot(var, "m", doubleZeros);
+                add_slot(var, "m", dataTypeZeros);
             }
 
             array = var_list;
             foreach (IVariableV1 var2 in array)
             {
-                add_slot(var2, "v", doubleZeros);
+                add_slot(var2, "v", dataTypeZeros);
             }
 
             if (amsgrad)
@@ -53,9 +53,36 @@ namespace MGroup.MachineLearning.TensorFlow.Keras.Optimizers
                 array = var_list;
                 foreach (IVariableV1 var3 in array)
                 {
-                    add_slot(var3, "vhat", doubleZeros);
+                    add_slot(var3, "vhat", dataTypeZeros);
                 }
             }
+        }
+
+        private ResourceVariable add_weight(string name, Shape shape, TF_DataType dtype = TF_DataType.TF_FLOAT, IInitializer initializer = null, bool trainable = false, VariableSynchronization synchronization = VariableSynchronization.Auto, VariableAggregation aggregation = VariableAggregation.None)
+        {
+            if (initializer == null)
+            {
+                initializer = Binding.tf.zeros_initializer;
+            }
+
+            if (dtype == TF_DataType.DtInvalid)
+            {
+                dtype = TF_DataType.TF_FLOAT;
+            }
+
+            return _add_variable_with_custom_getter(new VariableArgs
+            {
+                Name = name,
+                Shape = shape,
+                Getter = new Func<VariableArgs, IVariableV1>(base_layer_utils.make_variable),
+                DType = dtype,
+                Overwrite = true,
+                Initializer = initializer,
+                Trainable = trainable,
+                UseResource = true,
+                Synchronization = synchronization,
+                Aggregation = aggregation
+            }) as ResourceVariable;
         }
 
         private void my_prepare_local(DeviceDType device_dtype, Dictionary<DeviceDType, Dictionary<string, Tensor>> _apply_state)
@@ -98,7 +125,7 @@ namespace MGroup.MachineLearning.TensorFlow.Keras.Optimizers
             Tensor tensor4 = math_ops.pow(tensor2, y);
             Tensor value = apply_state[device_dtype]["lr_t"] * (math_ops.sqrt(1 - tensor4) / (1 - tensor3));
             apply_state[device_dtype]["lr"] = value;
-            apply_state[device_dtype]["epsilon"] = ops.convert_to_tensor(epsilon);
+            apply_state[device_dtype]["epsilon"] = ops.convert_to_tensor(epsilon, device_dtype.DType);
             apply_state[device_dtype]["beta_1_t"] = tensor;
             apply_state[device_dtype]["beta_1_power"] = tensor3;
             apply_state[device_dtype]["one_minus_beta_1_t"] = 1 - tensor;
@@ -122,33 +149,6 @@ namespace MGroup.MachineLearning.TensorFlow.Keras.Optimizers
             }
 
             throw new NotImplementedException("");
-        }
-
-        private ResourceVariable add_weight(string name, Shape shape, TF_DataType dtype = TF_DataType.TF_FLOAT, IInitializer initializer = null, bool trainable = false, VariableSynchronization synchronization = VariableSynchronization.Auto, VariableAggregation aggregation = VariableAggregation.None)
-        {
-            if (initializer == null)
-            {
-                initializer = Binding.tf.zeros_initializer;
-            }
-
-            if (dtype == TF_DataType.DtInvalid)
-            {
-                dtype = TF_DataType.TF_FLOAT;
-            }
-
-            return _add_variable_with_custom_getter(new VariableArgs
-            {
-                Name = name,
-                Shape = shape,
-                Getter = new Func<VariableArgs, IVariableV1>(base_layer_utils.make_variable),
-                DType = dtype,
-                Overwrite = true,
-                Initializer = initializer,
-                Trainable = trainable,
-                UseResource = true,
-                Synchronization = synchronization,
-                Aggregation = aggregation
-            }) as ResourceVariable;
         }
     }
 }
