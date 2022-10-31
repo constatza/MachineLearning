@@ -20,6 +20,7 @@ variables:
 
 steps:
 - task: PowerShell@2
+  enabled: false
   displayName: Install gitversion.tool
   inputs:
     targetType: inline
@@ -27,6 +28,7 @@ steps:
     pwsh: true
 
 - task: PowerShell@2
+  enabled: false
   displayName: Set SemVer from git history and update AssemblyInfo
   inputs:
     targetType: inline
@@ -63,6 +65,7 @@ steps:
     versionEnvVar: 'GitVersion.AssemblySemVer'
 
 - task: PublishSymbols@2
+  enabled: false
   displayName: "Publish symbols to Azure Devops artifacts"
   inputs:
     DetailedLog: true
@@ -101,6 +104,7 @@ steps:
     codecoverageTool: cobertura
 
 - task: DotNetCoreCLI@2
+  enabled: false
   name: dotnetPack
   condition: ne(variables['Build.Reason'], 'PullRequest')
   displayName: "Package new nugets"
@@ -120,6 +124,7 @@ steps:
     TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
 - task: PublishBuildArtifacts@1
+  enabled: false
   name: publishToFeed
   condition: ne(variables['Build.Reason'], 'PullRequest')
   displayName: "Publish to pipeline artifacts"
@@ -127,6 +132,7 @@ steps:
     ArtifactName: 'drop'
 
 - task: DotNetCoreCLI@2
+  enabled: false
   name: dotnetPushNugetPublic
   condition: ne(variables['Build.Reason'], 'PullRequest')
   displayName: "Push nugets to public feed"
