@@ -17,6 +17,7 @@ pool:
 variables:
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Debug'
+  testProject: 'tests/MGroup.MachineLearning.Tests'
 
 steps:
 - task: PowerShell@2
@@ -33,6 +34,15 @@ steps:
     script: ../dotnet-gitversion /updateassemblyinfo AssemblyInfo.cs AssemblyVersionInfo.cs /output buildserver 
     pwsh: true
 
+- task: DotNetCoreCLI@2
+  name: dotnetRestore
+  displayName: "Restore nugets"
+  inputs:
+    command: 'restore'
+    verbosityRestore: 'Normal'
+    feedsToUse: 'config'
+    nugetConfigPath: 'NuGet.config'
+
 - task: SonarCloudPrepare@1
   condition: ne(variables['Build.Reason'], 'PullRequest')
   displayName: "Prepare SonarCloud analysis"
@@ -42,15 +52,6 @@ steps:
     scannerMode: 'MSBuild'
     projectKey: 'MachineLearning'
     extraProperties: 'sonar.cs.opencover.reportsPaths=$(Build.SourcesDirectory)/coverage/coverage.opencover.xml'
-
-- task: DotNetCoreCLI@2
-  name: dotnetRestore
-  displayName: "Restore nugets"
-  inputs:
-    command: 'restore'
-    verbosityRestore: 'Normal'
-    feedsToUse: 'config'
-    nugetConfigPath: 'NuGet.config'
     
 - task: DotNetCoreCLI@2
   name: dotnetBuild
@@ -61,14 +62,6 @@ steps:
     versioningScheme: 'byEnvVar'
     versionEnvVar: 'GitVersion.AssemblySemVer'
 
-- task: PublishSymbols@2
-  displayName: "Publish symbols to Azure Devops artifacts"
-  inputs:
-    DetailedLog: true
-    SearchPattern: '**/bin/**/*.pdb'
-    IndexSources: false
-    SymbolServerType: 'TeamServices'
-
 - task: DotNetCoreCLI@2
   enabled: true
   displayName: Run tests (develop)
@@ -78,6 +71,14 @@ steps:
     projects: '**/*[Tt]ests/*.csproj'
     arguments: '--configuration $(BuildConfiguration) /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura'
     publishTestResults: true
+
+- task: PublishSymbols@2
+  displayName: "Publish symbols to Azure Devops artifacts"
+  inputs:
+    DetailedLog: true
+    SearchPattern: '**/bin/**/*.pdb'
+    IndexSources: false
+    SymbolServerType: 'TeamServices'
 
 - task: SonarCloudAnalyze@1
   condition: ne(variables['Build.Reason'], 'PullRequest')
