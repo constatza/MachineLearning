@@ -7,7 +7,7 @@
     <Description>A series of constitutive laws pertaining to the solution of structural mechanics problems, based on machine learning techniques</Description>
     <PackageProjectUrl>http://mgroup.ntua.gr/</PackageProjectUrl>
     <RepositoryUrl>https://github.com/mgroupntua/MachineLearning</RepositoryUrl>
-    <PackageIconUrl>https://github.com/mgroupntua/MachineLearning/raw/develop/MGroupMachineLearning.png</PackageIconUrl>
+    <PackageIconUrl>https://github.com/mgroupntua/MachineLearning/raw/develop/MGroupConstitutiveStructuralMachineLearning.png</PackageIconUrl>
   </PropertyGroup>
 
   <ItemGroup>
