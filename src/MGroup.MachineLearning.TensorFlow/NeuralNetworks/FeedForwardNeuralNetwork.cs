@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Tensorflow;
@@ -55,42 +55,36 @@ namespace MGroup.MachineLearning.TensorFlow.NeuralNetworks
         {
             tf.enable_eager_execution();
 
-            if (NormalizationX != null)
+            if (testX != null)
             {
-                if (testX != null)
-                {
-                    var trainAndTestX = new double[trainX.GetLength(0) + testX.GetLength(0), trainX.GetLength(1)];
-                    trainX.CopyTo(trainAndTestX, 0);
-                    testX.CopyTo(trainAndTestX, trainX.Length);
-                    NormalizationX.Initialize(trainAndTestX, NormalizationDirection.PerColumn);
-                    //
-                    trainX = NormalizationX.Normalize(trainX);
-                    testX = NormalizationX.Normalize(testX);
-                }
-                else
-                {
-                    NormalizationX.Initialize(trainX, NormalizationDirection.PerColumn);
-                    trainX = NormalizationX.Normalize(trainX);
-                }
+                var trainAndTestX = new double[trainX.GetLength(0) + testX.GetLength(0), trainX.GetLength(1)];
+                trainX.CopyTo(trainAndTestX, 0);
+                testX.CopyTo(trainAndTestX, trainX.Length);
+                NormalizationX.Initialize(trainAndTestX, NormalizationDirection.PerColumn);
+                //
+                trainX = NormalizationX.Normalize(trainX);
+                testX = NormalizationX.Normalize(testX);
+            }
+            else
+            {
+                NormalizationX.Initialize(trainX, NormalizationDirection.PerColumn);
+                trainX = NormalizationX.Normalize(trainX);
             }
 
-            if (NormalizationY != null)
+            if (testX != null)
             {
-                if (testX != null)
-                {
-                    var trainAndTestY = new double[trainY.GetLength(0) + testY.GetLength(0), trainY.GetLength(1)];
-                    trainY.CopyTo(trainAndTestY, 0);
-                    testY.CopyTo(trainAndTestY, trainY.Length);
-                    NormalizationY.Initialize(trainAndTestY, NormalizationDirection.PerColumn);
-                    //
-                    trainY = NormalizationY.Normalize(trainY);
-                    testY = NormalizationY.Normalize(testY);
-                }
-                else
-                {
-                    NormalizationY.Initialize(trainY, NormalizationDirection.PerColumn);
-                    trainY = NormalizationY.Normalize(trainY);
-                }
+                var trainAndTestY = new double[trainY.GetLength(0) + testY.GetLength(0), trainY.GetLength(1)];
+                trainY.CopyTo(trainAndTestY, 0);
+                testY.CopyTo(trainAndTestY, trainY.Length);
+                NormalizationY.Initialize(trainAndTestY, NormalizationDirection.PerColumn);
+                //
+                trainY = NormalizationY.Normalize(trainY);
+                testY = NormalizationY.Normalize(testY);
+            }
+            else
+            {
+                NormalizationY.Initialize(trainY, NormalizationDirection.PerColumn);
+                trainY = NormalizationY.Normalize(trainY);
             }
 
             this.trainX = np.array(trainX);
@@ -146,10 +140,7 @@ namespace MGroup.MachineLearning.TensorFlow.NeuralNetworks
 
         public double[,] EvaluateResponses(double[,] stimuli)
         {
-            if (NormalizationX != null)
-            {
-                stimuli = NormalizationX.Normalize(stimuli);
-            }
+            stimuli = NormalizationX.Normalize(stimuli);
 
             var npData = np.array(stimuli);
             var resultFull = model.Apply(npData, training: false);
@@ -163,20 +154,14 @@ namespace MGroup.MachineLearning.TensorFlow.NeuralNetworks
                 }
             }
 
-            if (NormalizationY != null)
-            {
-                responses = NormalizationY.Denormalize(responses);
-            }
+            responses = NormalizationY.Denormalize(responses);
 
             return responses;
         }
 
         public double[][,] EvaluateResponseGradients(double[,] stimuli)
         {
-            if (NormalizationX != null)
-            {
-                stimuli = NormalizationX.Normalize(stimuli);
-            }
+            stimuli = NormalizationX.Normalize(stimuli);
 
             var responseGradients = new double[stimuli.GetLength(0)][,];
             for (int k = 0; k < stimuli.GetLength(0); k++)
@@ -187,22 +172,14 @@ namespace MGroup.MachineLearning.TensorFlow.NeuralNetworks
                     sample[0, i] = stimuli[k, i];
                 }
 
-                var ratioX = new double[stimuli.GetLength(1)];
-                if (NormalizationX != null)
-                {
-                    ratioX = NormalizationX.ScalingRatio;
-                }
+                var ratioX = NormalizationX.ScalingRatio;
 
                 var npSample = np.array(sample);
                 using var tape = tf.GradientTape(persistent: true);
                 {
                     tape.watch(npSample);
                     Tensor pred = model.Apply(npSample, training: false);
-                    var ratioY = new double[stimuli.GetLength(1)];
-                    if (NormalizationY != null)
-                    {
-                        ratioY = NormalizationY.ScalingRatio;
-                    }
+                    var ratioY = NormalizationY.ScalingRatio;
 
                     var numRowsGrad = pred.shape.dims[1];
                     var numColsGrad = npSample.GetShape().as_int_list()[1];
@@ -214,15 +191,7 @@ namespace MGroup.MachineLearning.TensorFlow.NeuralNetworks
                         var slicedGrad = tape.gradient(slicedPred, npSample).ToArray<double>();
                         for (int j = 0; j < numColsGrad; j++)
                         {
-                            responseGradients[k][i, j] = slicedGrad[j];
-                            if (NormalizationX != null)
-                            {
-                                responseGradients[k][i, j] = 1 / ratioX[j] * responseGradients[k][i, j];
-                            }
-                            if (NormalizationY != null)
-                            {
-                                responseGradients[k][i, j] = ratioY[i] * responseGradients[k][i, j];
-                            }
+                            responseGradients[k][i, j] = ratioY[i] / ratioX[j] * slicedGrad[j];
                         }
                     }
                 }
