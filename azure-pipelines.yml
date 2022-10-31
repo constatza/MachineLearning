@@ -34,7 +34,6 @@ steps:
     pwsh: true
 
 - task: SonarCloudPrepare@1
-  enabled: false
   condition: ne(variables['Build.Reason'], 'PullRequest')
   displayName: "Prepare SonarCloud analysis"
   inputs:
@@ -81,19 +80,16 @@ steps:
     publishTestResults: true
 
 - task: SonarCloudAnalyze@1
-  enabled: false
   condition: ne(variables['Build.Reason'], 'PullRequest')
   displayName: "Perform SonarCloud Analysis"
 
 - task: SonarCloudPublish@1
-  enabled: false
   condition: ne(variables['Build.Reason'], 'PullRequest')
   displayName: 'Publish Quality Gate results'
   inputs:
     pollingTimeoutSec: '300'
 
 - task: PublishCodeCoverageResults@1
-  enabled: false
   displayName: 'Publish code coverage results'
   inputs:
     summaryFileLocation: $(Build.SourcesDirectory)/coverage/Cobertura/Cobertura.xml
@@ -133,7 +129,7 @@ steps:
   inputs:
     command: 'push'
     packagesToPush: '$(build.artifactStagingDirectory)/*.nupkg'
-    verbosityPack: 'Minimal'
+    verbosityPack: 'Normal'
     feedPublish: 'MSolve/MGroup'
 
 - task: DotNetCoreCLI@2
