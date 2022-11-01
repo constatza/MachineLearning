@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -13,7 +13,7 @@ namespace MGroup.MachineLearning
         double[,] EvaluateResponses(double[,] data);
         double[][,] EvaluateResponseGradients(double[,] stimuli);
 
-        void LoadNetwork(string netPath, string weightsPath);
-        void SaveNetwork(string netPath, string weightsPath);
+        void LoadNetwork(string netPath, string weightsPath, string normalizationXPath, string normalizationYPath);
+        void SaveNetwork(string netPath, string weightsPath, string normalizationXPath, string normalizationYPath);
     }
 }

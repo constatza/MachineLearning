@@ -26,8 +26,8 @@ namespace MGroup.MachineLearning.TensorFlow.NeuralNetworks
         public int BatchSize { get; }
         public int Epochs { get; }
         public IEnumerable<NeuralNetworkLayerParameter> NeuralNetworkLayerParameters { get => neuralNetworkLayerParameters; }
-        public INormalization NormalizationX { get; }
-        public INormalization NormalizationY { get; }
+        public INormalization NormalizationX { get; private set; }
+        public INormalization NormalizationY { get; private set; }
         public OptimizerV2 Optimizer { get; }
         public ILossFunc LossFunction { get; }
         public Layer[] Layer { get; private set; }
@@ -49,7 +49,14 @@ namespace MGroup.MachineLearning.TensorFlow.NeuralNetworks
             }
         }
 
-        public void Train(double[,] stimuli, double[,] responses) => Train(stimuli, responses, null, null);
+		/// <summary>
+		/// This constructor can be used for objects that will load their properties from external files.
+		/// </summary>
+		public FeedForwardNeuralNetwork()
+		{
+		}
+
+		public void Train(double[,] stimuli, double[,] responses) => Train(stimuli, responses, null, null);
 
         public void Train(double[,] trainX, double[,] trainY, double[,] testX = null, double[,] testY = null)
         {
@@ -87,7 +94,7 @@ namespace MGroup.MachineLearning.TensorFlow.NeuralNetworks
                 trainY = NormalizationY.Normalize(trainY);
             }
 
-            this.trainX = np.array(trainX);
+			this.trainX = np.array(trainX);
             this.trainY = np.array(trainY);
 
             if (testX != null && testY != null)
@@ -200,7 +207,7 @@ namespace MGroup.MachineLearning.TensorFlow.NeuralNetworks
             return responseGradients;
         }
 
-        public void SaveNetwork(string netPath, string weightsPath)
+        public void SaveNetwork(string netPath, string weightsPath, string normalizationXPath, string normalizationYPath)
         {
             using (var writer = new StreamWriter(netPath))
             {
@@ -215,32 +222,72 @@ namespace MGroup.MachineLearning.TensorFlow.NeuralNetworks
                 writer.WriteLine($"{trainY.GetShape().as_int_list()[1]}");
             }
             model.save_weights(weightsPath);
-        }
 
-        public void LoadNetwork(string netPath, string weightsPath)
+			using (Stream stream = File.Open(normalizationXPath, false ? FileMode.Append : FileMode.Create))
+			{
+				var binaryFormatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+				binaryFormatter.Serialize(stream, NormalizationX);
+			}
+
+			using (Stream stream = File.Open(normalizationYPath, false ? FileMode.Append : FileMode.Create))
+			{
+				var binaryFormatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+				binaryFormatter.Serialize(stream, NormalizationY);
+			}
+		}
+
+        public void LoadNetwork(string netPath, string weightsPath, string normalizationXPath, string normalizationYPath)
         {
             keras.backend.clear_session();
 
-            var layers = new LayersApi();
+			keras.backend.set_floatx(TF_DataType.TF_DOUBLE);
+
+			var layers = new LayersApi();
 
             var lines = File.ReadAllLines(netPath);
 
-            var inputs = keras.Input(shape: Convert.ToInt32(lines.First()));
+			var inputs = keras.Input(shape: Convert.ToInt32(lines.First()), dtype: TF_DataType.TF_DOUBLE);
 
-            var outputs = layers.Dense(Convert.ToInt32(lines[1]), lines[2]).Apply(inputs);
-
-            for (int i = 1; i < neuralNetworkLayerParameters.Length; i++)
+			var outputs = new Dense(new DenseArgs() 
             {
-                outputs = layers.Dense(Convert.ToInt32(lines[2 * i + 1]), lines[2 * i + 2]).Apply(outputs);
-            }
+				Units = Convert.ToInt32(lines[1]),
+				Activation = GetActivationByName((ActivationType)Enum.Parse(typeof(ActivationType), lines[2])),
+				DType = TF_DataType.TF_DOUBLE
+			}).Apply(inputs);
 
-            outputs = layers.Dense(Convert.ToInt32(lines.Last())).Apply(outputs);
+			for (int i = 1; i < (lines.Length - 2) / 2; i++)
+            {
+				outputs = new Dense(new DenseArgs()
+				{
+					Units = Convert.ToInt32(lines[1]),
+					Activation = GetActivationByName((ActivationType)Enum.Parse(typeof(ActivationType), lines[2])),
+					DType = TF_DataType.TF_DOUBLE
+				}).Apply(outputs);
+			}
 
-            // build keras model
-            model = new Keras.Model(inputs, outputs, "current_model");
+			outputs = new Dense(new DenseArgs()
+			{
+				Units = Convert.ToInt32(lines.Last()),
+				DType = TF_DataType.TF_DOUBLE
+			}).Apply(outputs);
+
+			// build keras model
+			model = new Keras.Model(inputs, outputs, "current_model");
 
             model.load_weights(weightsPath);
-        }
+
+			using (Stream stream = File.Open(normalizationXPath, FileMode.Open))
+			{
+				var binaryFormatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+				NormalizationX = (INormalization)binaryFormatter.Deserialize(stream);
+			}
+
+			using (Stream stream = File.Open(normalizationYPath, FileMode.Open))
+			{
+				var binaryFormatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+				NormalizationY = (INormalization)binaryFormatter.Deserialize(stream);
+			}
+		}
 
         private Activation GetActivationByName(ActivationType activation)
         {

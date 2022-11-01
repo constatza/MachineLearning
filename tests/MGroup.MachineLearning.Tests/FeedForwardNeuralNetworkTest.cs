@@ -30,7 +30,7 @@ namespace MGroup.MachineLearning.Tests
 		}
 
 		[Fact]
-		public static void WithoutNormalizationWithAdam() => TestFeedForwardNeuralNetwork(new FeedForwardNeuralNetwork(new WithoutNormalization(), new WithoutNormalization(),
+		public static void WithoutNormalizationWithAdam() => TestFeedForwardNeuralNetwork(new FeedForwardNeuralNetwork(new NullNormalization(), new NullNormalization(),
 		new TensorFlow.Keras.Optimizers.Adam(dataType: Tensorflow.TF_DataType.TF_DOUBLE, learning_rate: 0.05f),
 		keras.losses.MeanSquaredError(), new[]
 		{
@@ -40,7 +40,7 @@ namespace MGroup.MachineLearning.Tests
 		200));
 
 		[Fact(Skip = "INeuralNetwork.EvaluateResponseGradients doesn't work for SGD optimizer")]
-		public static void WithoutNormalizationWithSGD() => TestFeedForwardNeuralNetwork(new FeedForwardNeuralNetwork(new WithoutNormalization(), new WithoutNormalization(),
+		public static void WithoutNormalizationWithSGD() => TestFeedForwardNeuralNetwork(new FeedForwardNeuralNetwork(new NullNormalization(), new NullNormalization(),
 				new TensorFlow.Keras.Optimizers.SGD(dataType: Tensorflow.TF_DataType.TF_DOUBLE, learning_rate: 0.1f),
 				keras.losses.MeanSquaredError(), new[]
 				{
@@ -50,7 +50,7 @@ namespace MGroup.MachineLearning.Tests
 				200));
 
 		[Fact]
-		public static void WithoutNormalizationWithRMSProp() => TestFeedForwardNeuralNetwork(new FeedForwardNeuralNetwork(new WithoutNormalization(), new WithoutNormalization(),
+		public static void WithoutNormalizationWithRMSProp() => TestFeedForwardNeuralNetwork(new FeedForwardNeuralNetwork(new NullNormalization(), new NullNormalization(),
 				new TensorFlow.Keras.Optimizers.RMSProp(dataType: Tensorflow.TF_DataType.TF_DOUBLE, learning_rate: 0.1f),
 				keras.losses.MeanSquaredError(), new[]
 				{

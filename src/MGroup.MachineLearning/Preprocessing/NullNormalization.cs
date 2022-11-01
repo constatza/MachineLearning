@@ -1,9 +1,12 @@
+﻿using System;
+
 namespace MGroup.MachineLearning.Preprocessing
 {
-	/// <summary>
-	/// No normalization takes place.
-	/// </summary>
-	public class WithoutNormalization : INormalization
+    /// <summary>
+    /// No normalization takes place.
+    /// </summary>
+    [Serializable]
+	public class NullNormalization : INormalization
 	{
 		public double[] ScalingRatio { get; private set; }
 
