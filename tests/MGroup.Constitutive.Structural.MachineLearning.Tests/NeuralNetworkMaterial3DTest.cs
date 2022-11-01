@@ -1,24 +1,17 @@
 using System;
-using System.IO;
-
-using MGroup.Constitutive.Structural.MachineLearning;
-using MGroup.MachineLearning.Preprocessing;
 using MGroup.MachineLearning.TensorFlow.NeuralNetworks;
-using static Tensorflow.KerasApi;
-
-using Xunit;
 using MGroup.Constitutive.Structural.Continuum;
 using MGroup.LinearAlgebra.Matrices;
-using System.Reflection;
+using Xunit;
 
-namespace MGroup.MachineLearning.Tests
+namespace MGroup.Constitutive.Structural.MachineLearning.Tests
 {
     public static class NeuralNetworkMaterial3DTest
 	{
 		[Fact]
 		public static void RunTest()
 		{
-			// these files are used to generate an already trained FeedForwardNeuralNetwork which was created with strain-stress pairs from an ElasticMaterial3D(youngModulus:20, poissonRatio:0.2)
+			// these files are used to generate an already trained FeedForwardNeuralNetwork which was created using strain-stress pairs from an ElasticMaterial3D(youngModulus:20, poissonRatio:0.2)
 			var netPathName = "SavedFiles\\network_architecture.txt";
 			var weightsPathName = "SavedFiles\\trained_weights";
 			var normalizationXPathName = "SavedFiles\\normalizationX";

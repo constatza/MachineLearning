@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\MGroup.Constitutive.Structural.MachineLearning\MGroup.Constitutive.Structural.MachineLearning.csproj" />
+    <ProjectReference Include="..\..\src\MGroup.Constitutive.Structural.MachineLearning\MGroup.Constitutive.Structural.MachineLearning.csproj" />
   </ItemGroup>
 
 </Project>
