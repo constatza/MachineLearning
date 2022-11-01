@@ -26,4 +26,8 @@
     <ProjectReference Include="..\..\src\MGroup.Constitutive.Structural.MachineLearning\MGroup.Constitutive.Structural.MachineLearning.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="SavedFiles\" />
+  </ItemGroup>
+
 </Project>

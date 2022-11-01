@@ -3,6 +3,7 @@ using MGroup.MachineLearning.TensorFlow.NeuralNetworks;
 using MGroup.Constitutive.Structural.Continuum;
 using MGroup.LinearAlgebra.Matrices;
 using Xunit;
+using System.Reflection;
 
 namespace MGroup.Constitutive.Structural.MachineLearning.Tests
 {
@@ -12,10 +13,16 @@ namespace MGroup.Constitutive.Structural.MachineLearning.Tests
 		public static void RunTest()
 		{
 			// these files are used to generate an already trained FeedForwardNeuralNetwork which was created using strain-stress pairs from an ElasticMaterial3D(youngModulus:20, poissonRatio:0.2)
-			var netPathName = "SavedFiles\\network_architecture.txt";
-			var weightsPathName = "SavedFiles\\trained_weights";
-			var normalizationXPathName = "SavedFiles\\normalizationX";
-			var normalizationYPathName = "SavedFiles\\normalizationY";
+			string initialPath = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location).Split(new string[] { "\\bin" }, StringSplitOptions.None)[0];
+			var folderName = "SavedFiles";
+			var netPathName = "network_architecture.txt";
+			netPathName = Path.Combine(initialPath, folderName, netPathName);
+			var weightsPathName = "trained_weights";
+			weightsPathName = Path.Combine(initialPath, folderName, weightsPathName);
+			var normalizationXPathName = "normalizationX";
+			normalizationXPathName = Path.Combine(initialPath, folderName, normalizationXPathName);
+			var normalizationYPathName = "normalizationY";
+			normalizationYPathName = Path.Combine(initialPath, folderName, normalizationYPathName);
 
 			var neuralNetwork = new FeedForwardNeuralNetwork();
 			neuralNetwork.LoadNetwork(netPathName, weightsPathName, normalizationXPathName, normalizationYPathName);
