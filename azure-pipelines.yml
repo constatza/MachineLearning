@@ -50,7 +50,7 @@ steps:
     SonarCloud: 'SonarCloud'
     organization: 'mgroupntua'
     scannerMode: 'MSBuild'
-    projectKey: 'MachineLearning'
+    projectKey: 'MSolve.MachineLearning'
     extraProperties: 'sonar.cs.opencover.reportsPaths=$(Build.SourcesDirectory)/coverage/coverage.opencover.xml'
     
 - task: DotNetCoreCLI@2
