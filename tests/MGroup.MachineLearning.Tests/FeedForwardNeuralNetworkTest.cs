@@ -3,10 +3,12 @@ using Xunit;
 using static Tensorflow.KerasApi;
 using MGroup.MachineLearning.TensorFlow.NeuralNetworks;
 using MGroup.MachineLearning.Preprocessing;
+using MGroup.MachineLearning.TensorFlow.KerasLayers;
+using Tensorflow.Keras.Losses;
 
 namespace MGroup.MachineLearning.Tests
 {
-    public class FeedForwardNeuralNetworkTest
+	public class FeedForwardNeuralNetworkTest
     {
 		//learning the polynomial : f(x)=x^2 in x -> [-1 , 1], f'(x)=2x
 		static double[,] trainX = { { -1 }, { -0.9 }, { -0.8 }, { -0.7 }, { -0.6 }, { -0.5 }, { -0.4 }, { -0.3 }, { -0.2 }, { -0.1 }, { 0 }, { 0.1 }, { 0.2 }, { 0.3 }, { 0.4 }, { 0.5 }, { 0.6 }, { 0.7 }, { 0.8 }, { 0.9 } };
@@ -32,101 +34,121 @@ namespace MGroup.MachineLearning.Tests
 		[Fact]
 		public static void WithoutNormalizationWithAdam() => TestFeedForwardNeuralNetwork(new FeedForwardNeuralNetwork(new NullNormalization(), new NullNormalization(),
 		new TensorFlow.Keras.Optimizers.Adam(dataType: Tensorflow.TF_DataType.TF_DOUBLE, learning_rate: 0.05f),
-		keras.losses.MeanSquaredError(), new[]
+		keras.losses.MeanSquaredError(), new INetworkLayer[]
 		{
-					new NeuralNetworkLayerParameter(50, ActivationType.SoftMax),
-					new NeuralNetworkLayerParameter(50, ActivationType.SoftMax),
+					new InputLayer(new int[1]{1}),
+					new DenseLayer(50, ActivationType.SoftMax),
+					new DenseLayer(50, ActivationType.SoftMax),
+					new DenseLayer(1, ActivationType.Linear),
 		},
 		200));
 
 		[Fact(Skip = "INeuralNetwork.EvaluateResponseGradients doesn't work for SGD optimizer")]
 		public static void WithoutNormalizationWithSGD() => TestFeedForwardNeuralNetwork(new FeedForwardNeuralNetwork(new NullNormalization(), new NullNormalization(),
 				new TensorFlow.Keras.Optimizers.SGD(dataType: Tensorflow.TF_DataType.TF_DOUBLE, learning_rate: 0.1f),
-				keras.losses.MeanSquaredError(), new[]
+				keras.losses.MeanSquaredError(), new INetworkLayer[]
 				{
-					new NeuralNetworkLayerParameter(50, ActivationType.SoftMax),
-					new NeuralNetworkLayerParameter(50, ActivationType.SoftMax),
+					new InputLayer(new int[1]{1}),
+					new DenseLayer(50, ActivationType.SoftMax),
+					new DenseLayer(50, ActivationType.SoftMax),
+					new DenseLayer(1, ActivationType.Linear),
 				},
 				200));
 
 		[Fact]
 		public static void WithoutNormalizationWithRMSProp() => TestFeedForwardNeuralNetwork(new FeedForwardNeuralNetwork(new NullNormalization(), new NullNormalization(),
 				new TensorFlow.Keras.Optimizers.RMSProp(dataType: Tensorflow.TF_DataType.TF_DOUBLE, learning_rate: 0.1f),
-				keras.losses.MeanSquaredError(), new[]
+				keras.losses.MeanSquaredError(), new INetworkLayer[]
 				{
-					new NeuralNetworkLayerParameter(50, ActivationType.SoftMax),
-					new NeuralNetworkLayerParameter(50, ActivationType.SoftMax),
+					new InputLayer(new int[1]{1}),
+					new DenseLayer(50, ActivationType.SoftMax),
+					new DenseLayer(50, ActivationType.SoftMax),
+					new DenseLayer(1, ActivationType.Linear),
 				},
 				200));
 
 		[Fact]
         public static void MinMaxNormalizationWithAdam() => TestFeedForwardNeuralNetwork(new FeedForwardNeuralNetwork(new MinMaxNormalization(), new MinMaxNormalization(),
                 new TensorFlow.Keras.Optimizers.Adam(dataType: Tensorflow.TF_DataType.TF_DOUBLE, learning_rate: 0.05f),
-                keras.losses.MeanSquaredError(), new[]
+                keras.losses.MeanSquaredError(), new INetworkLayer[]
                 {
-                    new NeuralNetworkLayerParameter(50, ActivationType.SoftMax),
-                    new NeuralNetworkLayerParameter(50, ActivationType.SoftMax),
-                },
-                200));
+					new InputLayer(new int[1]{1}),
+					new DenseLayer(50, ActivationType.SoftMax),
+					new DenseLayer(50, ActivationType.SoftMax),
+					new DenseLayer(1, ActivationType.Linear),
+				},
+				200));
 
 		[Fact(Skip = "INeuralNetwork.EvaluateResponseGradients doesn't work for SGD optimizer")]
 		public static void MinMaxNormalizationWithSGD() => TestFeedForwardNeuralNetwork(new FeedForwardNeuralNetwork(new MinMaxNormalization(), new MinMaxNormalization(),
                 new TensorFlow.Keras.Optimizers.SGD(dataType: Tensorflow.TF_DataType.TF_DOUBLE, learning_rate: 0.1f),
-                keras.losses.MeanSquaredError(), new[]
+                keras.losses.MeanSquaredError(), new INetworkLayer[]
                 {
-                    new NeuralNetworkLayerParameter(50, ActivationType.SoftMax),
-                    new NeuralNetworkLayerParameter(50, ActivationType.SoftMax),
-                },
-                200));
+					new InputLayer(new int[1]{1}),
+					new DenseLayer(50, ActivationType.SoftMax),
+					new DenseLayer(50, ActivationType.SoftMax),
+					new DenseLayer(1, ActivationType.Linear),
+				},
+				200));
 
         [Fact]
         public static void MinMaxNormalizationWithRMSProp() => TestFeedForwardNeuralNetwork(new FeedForwardNeuralNetwork(new MinMaxNormalization(), new MinMaxNormalization(),
                 new TensorFlow.Keras.Optimizers.RMSProp(dataType: Tensorflow.TF_DataType.TF_DOUBLE, learning_rate: 0.1f),
-                keras.losses.MeanSquaredError(), new[]
+                keras.losses.MeanSquaredError(), new INetworkLayer[]
                 {
-                    new NeuralNetworkLayerParameter(50, ActivationType.SoftMax),
-                    new NeuralNetworkLayerParameter(50, ActivationType.SoftMax),
-                },
-                200));
+					new InputLayer(new int[1]{1}),
+					new DenseLayer(50, ActivationType.SoftMax),
+					new DenseLayer(50, ActivationType.SoftMax),
+					new DenseLayer(1, ActivationType.Linear),
+				},
+				200));
 
         [Fact]
         public static void ZScoreNormalizationWithAdam() => TestFeedForwardNeuralNetwork(new FeedForwardNeuralNetwork(new ZScoreNormalization(), new ZScoreNormalization(),
                 new TensorFlow.Keras.Optimizers.Adam(dataType: Tensorflow.TF_DataType.TF_DOUBLE, learning_rate: 0.05f),
-                keras.losses.MeanSquaredError(), new[]
+                keras.losses.MeanSquaredError(), new INetworkLayer[]
                 {
-                    new NeuralNetworkLayerParameter(50, ActivationType.SoftMax),
-                    new NeuralNetworkLayerParameter(50, ActivationType.SoftMax),
-                },
-                200));
+					new InputLayer(new int[1]{1}),
+					new DenseLayer(50, ActivationType.SoftMax),
+					new DenseLayer(50, ActivationType.SoftMax),
+					new DenseLayer(1, ActivationType.Linear),
+				},
+				200));
 
         [Fact (Skip = "INeuralNetwork.EvaluateResponseGradients doesn't work for SGD optimizer")]
         public static void ZScoreNormalizationWithSGD() => TestFeedForwardNeuralNetwork(new FeedForwardNeuralNetwork(new ZScoreNormalization(), new ZScoreNormalization(),
                 new TensorFlow.Keras.Optimizers.SGD(dataType: Tensorflow.TF_DataType.TF_DOUBLE, learning_rate: 0.05f),
-                keras.losses.MeanSquaredError(), new[]
+                keras.losses.MeanSquaredError(), new INetworkLayer[]
                 {
-                    new NeuralNetworkLayerParameter(50, ActivationType.SoftMax),
-                    new NeuralNetworkLayerParameter(50, ActivationType.SoftMax),
-                },
-                200));
+					new InputLayer(new int[1]{1}),
+					new DenseLayer(50, ActivationType.SoftMax),
+					new DenseLayer(50, ActivationType.SoftMax),
+					new DenseLayer(1, ActivationType.Linear),
+				},
+				200));
 
         [Fact]
         public static void ZScoreNormalizationWithRMSProp() => TestFeedForwardNeuralNetwork(new FeedForwardNeuralNetwork(new ZScoreNormalization(), new ZScoreNormalization(),
                 new TensorFlow.Keras.Optimizers.RMSProp(dataType: Tensorflow.TF_DataType.TF_DOUBLE, learning_rate: 0.1f),
-				keras.losses.MeanSquaredError(), new[]
+				keras.losses.MeanSquaredError(), new INetworkLayer[]
                 {
-                    new NeuralNetworkLayerParameter(50, ActivationType.SoftMax),
-                    new NeuralNetworkLayerParameter(50, ActivationType.SoftMax),
-                },
-                200));
+					new InputLayer(new int[1]{1}),
+					new DenseLayer(50, ActivationType.SoftMax),
+					new DenseLayer(50, ActivationType.SoftMax),
+					new DenseLayer(1, ActivationType.Linear),
+				},
+				200));
 
         private static void TestFeedForwardNeuralNetwork(FeedForwardNeuralNetwork neuralNetwork)
         {
             neuralNetwork.Train(trainX, trainY);
-            var responses = neuralNetwork.EvaluateResponses(testX);
+            //var responses = neuralNetwork.EvaluateResponses(testX);
             var gradients = neuralNetwork.EvaluateResponseGradients(testX);
-            CheckResponseAccuracy(testY, responses);
+			//CheckResponseAccuracy(testY, responses);
+			var loss = neuralNetwork.ValidateNetwork(testX,testY);
+			Assert.True(loss < 0.03);
             CheckResponseGradientAccuracy(testGradient, gradients);
-        }
+		}
 
         private static void CheckResponseAccuracy(double[,] data, double[,] prediction)
         {
