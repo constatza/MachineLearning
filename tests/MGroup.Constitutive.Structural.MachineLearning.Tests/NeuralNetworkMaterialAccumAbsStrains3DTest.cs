@@ -4,10 +4,11 @@ using MGroup.Constitutive.Structural.Continuum;
 using MGroup.LinearAlgebra.Matrices;
 using Xunit;
 using System.Reflection;
+using MGroup.MachineLearning;
 
 namespace MGroup.Constitutive.Structural.MachineLearning.Tests
 {
-    public static class NeuralNetworkMaterial3DTest
+	public static class NeuralNetworkMaterialAccumAbsStrains3DTest
 	{
 		[Fact]
 		public static void RunTest()
@@ -15,25 +16,25 @@ namespace MGroup.Constitutive.Structural.MachineLearning.Tests
 			// these files are used to generate an already trained FeedForwardNeuralNetwork which was created using strain-stress pairs from an ElasticMaterial3D(youngModulus:20, poissonRatio:0.2)
 			string initialPath = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location).Split(new string[] { "\\bin" }, StringSplitOptions.None)[0];
 			var folderName = "SavedFiles";
-			var netPathName = "network_architecture";
+			var netPathName = "network_architecture_acc_strains";
 			netPathName = Path.Combine(initialPath, folderName, netPathName);
-			var weightsPathName = "trained_weights";
+			var weightsPathName = "trained_weights_acc_strains";
 			weightsPathName = Path.Combine(initialPath, folderName, weightsPathName);
-			var normalizationPathName = "normalization";
+			var normalizationPathName = "normalization_acc_strains";
 			normalizationPathName = Path.Combine(initialPath, folderName, normalizationPathName);
 
 			var neuralNetwork = new FeedForwardNeuralNetwork();
 			neuralNetwork.LoadNetwork(netPathName, weightsPathName, normalizationPathName);
 
-			var neuralNetworkMaterial = new NeuralNetworkMaterial3D(neuralNetwork, new double[0]);
+			var neuralNetworkMaterial = new NeuralNetworkMaterialAccumAbsStrains3D(neuralNetwork, new double[0]);
 			var elasticMaterial = new ElasticMaterial3D(20, 0.2);
 
 			CheckNeuralNetworkMaterialAccuracy(neuralNetworkMaterial, elasticMaterial);
 		}
 
-		private static void CheckNeuralNetworkMaterialAccuracy(NeuralNetworkMaterial3D neuralNetworkMaterial, ElasticMaterial3D elasticMaterial)
+		private static void CheckNeuralNetworkMaterialAccuracy(NeuralNetworkMaterialAccumAbsStrains3D neuralNetworkMaterial, ElasticMaterial3D elasticMaterial)
 		{
-			var increments = 5;
+			var increments = 10;
 			var cases = 6;
 			var stressesNeuralNetwork = new double[cases * increments, 6];
 			var constitutiveNeuralNetwork = new Matrix[cases * increments];
@@ -82,7 +83,7 @@ namespace MGroup.Constitutive.Structural.MachineLearning.Tests
 			stressDeviation = stressDeviation / (increments * strainCases.GetLength(0));
 			constitutiveDeviation = constitutiveDeviation / (increments * strainCases.GetLength(0));
 
-			Assert.True(stressDeviation < 1e-6 && constitutiveDeviation < 2e-1);
+			Assert.True(stressDeviation < 1e-5 && constitutiveDeviation < 3e-1);
 		}
 	}
 }

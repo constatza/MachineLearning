@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MGroup.Constitutive.Structural" Version="0.2.0-unstable.46" />
+    <PackageReference Include="MGroup.Constitutive.Structural" Version="0.2.0-unstable.66" />
   </ItemGroup>
 
   <ItemGroup>
