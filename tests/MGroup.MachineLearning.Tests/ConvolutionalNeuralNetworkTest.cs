@@ -6,6 +6,9 @@ using MGroup.MachineLearning.TensorFlow.NeuralNetworks;
 using MGroup.MachineLearning.Preprocessing;
 using MGroup.MachineLearning.TensorFlow.KerasLayers;
 using Tensorflow;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.IO;
+using System.Reflection;
 
 namespace MGroup.MachineLearning.Tests
 {
@@ -35,7 +38,7 @@ namespace MGroup.MachineLearning.Tests
 			(double[,,,] trainX, double[,] trainY, double[,,,] testX, double[,] testY) = PrepareData();
 			neuralNetwork.Train(trainX, trainY);
 			var accuracy = neuralNetwork.ValidateNetwork(testX, testY);
-			Assert.True(accuracy > 0.75);
+			Assert.True(accuracy > 0.85);
 			//CheckResponseGradientAccuracy(testGradient, gradients);
 		}
 
@@ -63,54 +66,47 @@ namespace MGroup.MachineLearning.Tests
 
 		public static (double[,,,] trainX, double[,] trainY, double[,,,] testX, double[,] testY) PrepareData()
 		{
-			((var trainXnd, var trainYnd), (var testXnd, var testYnd)) = keras.datasets.mnist.load_data();
-			trainXnd = trainXnd["::600"];
-			trainYnd = trainYnd["::600"];
-			testXnd = testXnd["::100"];
-			testYnd = testYnd["::100"];
-			//trainYnd = np_utils.to_categorical(trainYnd, 10);
-			//testYnd = np_utils.to_categorical(testYnd, 10);
-			trainXnd = tf.expand_dims(trainXnd).numpy();
-			trainYnd = tf.expand_dims(trainYnd).numpy();
-			testXnd = tf.expand_dims(testXnd).numpy();
-			testYnd = tf.expand_dims(testYnd).numpy();
-			trainXnd = tf.convert_to_tensor(trainXnd, dtype: TF_DataType.TF_DOUBLE).numpy();
-			trainYnd = tf.convert_to_tensor(trainYnd, dtype: TF_DataType.TF_DOUBLE).numpy();
-			testXnd = tf.convert_to_tensor(testXnd, dtype: TF_DataType.TF_DOUBLE).numpy();
-			testYnd = tf.convert_to_tensor(testYnd, dtype: TF_DataType.TF_DOUBLE).numpy();
+			string initialPath = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location).Split(new string[] { "\\bin" }, StringSplitOptions.None)[0];
+			var folderName = "SavedFiles";
+			var trainXName = "mnist_trainX";
+			trainXName = Path.Combine(initialPath, folderName, trainXName);
+			folderName = "SavedFiles";
+			var trainYName = "mnist_trainY";
+			trainYName = Path.Combine(initialPath, folderName, trainYName);
+			folderName = "SavedFiles";
+			var testXName = "mnist_testX";
+			testXName = Path.Combine(initialPath, folderName, testXName);
+			folderName = "SavedFiles";
+			var testYName = "mnist_testY";
+			testYName = Path.Combine(initialPath, folderName, testYName);
 
-			(trainXnd, testXnd) = (trainXnd / 255.0f, testXnd / 255.0f);
-			double[,,,] trainX = new double[trainXnd.GetShape().as_int_list()[0], trainXnd.GetShape().as_int_list()[1], trainXnd.GetShape().as_int_list()[2], trainXnd.GetShape().as_int_list()[3]];
-			double[,] trainY = new double[trainYnd.GetShape().as_int_list()[0], trainYnd.GetShape().as_int_list()[1]];
-			double[,,,] testX = new double[testXnd.GetShape().as_int_list()[0], testXnd.GetShape().as_int_list()[1], testXnd.GetShape().as_int_list()[2], trainXnd.GetShape().as_int_list()[3]];
-			double[,] testY = new double[testYnd.GetShape().as_int_list()[0], testYnd.GetShape().as_int_list()[1]];
-			for (int k = 0; k < trainX.GetLength(2); k++)
+			var trainX = new double[200, 28, 28, 1];
+			var trainY = new double[200,1];
+			var testX = new double[100, 28, 28, 1];
+			var testY = new double[100,1];
+
+			using (Stream stream = File.Open(trainXName, FileMode.Open))
 			{
-				for (int j = 0; j < trainX.GetLength(1); j++)
-				{
-					for (int i = 0; i < trainX.GetLength(0); i++)
-					{
-						trainX[i, j, k, 0] = trainXnd[i, j, k, 0];
-					}
-					for (int i = 0; i < testX.GetLength(0); i++)
-					{
-						testX[i, j, k, 0] = testXnd[i, j, k, 0];
-					}
-				}
+				var binaryFormatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+				trainX = (double[,,,])binaryFormatter.Deserialize(stream);
 			}
-			for (int i = 0; i < trainY.GetLength(0); i++)
+
+			using (Stream stream = File.Open(trainYName, FileMode.Open))
 			{
-				for (int j = 0; j < trainY.GetLength(1); j++)
-				{
-					trainY[i, j] = trainYnd[i, j];
-				}
+				var binaryFormatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+				trainY = (double[,])binaryFormatter.Deserialize(stream);
 			}
-			for (int i = 0; i < testY.GetLength(0); i++)
+
+			using (Stream stream = File.Open(testXName, FileMode.Open))
 			{
-				for (int j = 0; j < testY.GetLength(1); j++)
-				{
-					testY[i, j] = testYnd[i, j];
-				}
+				var binaryFormatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+				testX = (double[,,,])binaryFormatter.Deserialize(stream);
+			}
+
+			using (Stream stream = File.Open(testYName, FileMode.Open))
+			{
+				var binaryFormatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+				testY = (double[,])binaryFormatter.Deserialize(stream);
 			}
 
 			return (trainX, trainY, testX, testY);
