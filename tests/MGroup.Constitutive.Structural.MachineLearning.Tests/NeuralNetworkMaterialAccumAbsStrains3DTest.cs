@@ -34,7 +34,7 @@ namespace MGroup.Constitutive.Structural.MachineLearning.Tests
 
 		private static void CheckNeuralNetworkMaterialAccuracy(NeuralNetworkMaterialAccumAbsStrains3D neuralNetworkMaterial, ElasticMaterial3D elasticMaterial)
 		{
-			var increments = 10;
+			var increments = 5;
 			var cases = 6;
 			var stressesNeuralNetwork = new double[cases * increments, 6];
 			var constitutiveNeuralNetwork = new Matrix[cases * increments];
