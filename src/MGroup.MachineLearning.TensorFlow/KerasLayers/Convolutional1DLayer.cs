@@ -1,25 +1,16 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
-
-using Tensorflow;
-using Tensorflow.Keras;
-using Tensorflow.Keras.ArgsDefinition;
-using Tensorflow.Keras.Layers;
-
 namespace MGroup.MachineLearning.TensorFlow.KerasLayers
 {
+	using System;
+
+	using Tensorflow;
+	using Tensorflow.Keras.ArgsDefinition;
+	using Tensorflow.Keras.Layers;
+
 	[Serializable]
 	public class Convolutional1DLayer : INetworkLayer
 	{
-		public int Filters { get; }
-		public int KernelSize { get; }
-		public ActivationType ActivationType { get; }
-		public int Rank { get; }
-		public int DilationRate { get; }
-		public int Strides { get; }
-
-		public Convolutional1DLayer(int filters, int kernelSize, ActivationType activationType, int rank = 1, int dilationRate = 1, int strides = 1)
+		public Convolutional1DLayer(int filters, int kernelSize, ActivationType activationType, 
+			int rank = 1, int dilationRate = 1, int strides = 1, ConvolutionPaddingType padding = ConvolutionPaddingType.Valid)
 		{
 			Filters = filters;
 			KernelSize = kernelSize;
@@ -27,30 +18,39 @@ namespace MGroup.MachineLearning.TensorFlow.KerasLayers
 			Rank = rank;
 			DilationRate = dilationRate;
 			Strides = strides;
+			Padding = padding;
 		}
 
-		public Tensors BuildLayer(Tensors inputs) => new Conv1D(new Conv1DArgs()
-		{
-			Rank = this.Rank,
-			Filters = this.Filters,
-			KernelSize = this.KernelSize,
-			Activation = GetActivationByName(ActivationType),
-			DilationRate = this.DilationRate,
-			Strides = this.Strides,
-			DType = TF_DataType.TF_DOUBLE,
-		}).Apply(inputs);
+		public int Filters { get; }
 
-		private Activation GetActivationByName(ActivationType activation)
+		public int KernelSize { get; }
+
+		public ActivationType ActivationType { get; }
+
+		public int Rank { get; }
+
+		public int DilationRate { get; }
+
+		public int Strides { get; }
+
+		public ConvolutionPaddingType Padding { get; }
+
+		public Tensors BuildLayer(Tensors inputs)
 		{
-			return activation switch
+			var args = new Conv1DArgs()
 			{
-				ActivationType.Linear => KerasApi.keras.activations.Linear,
-				ActivationType.RelU => KerasApi.keras.activations.Relu,
-				ActivationType.Sigmoid => KerasApi.keras.activations.Sigmoid,
-				ActivationType.TanH => KerasApi.keras.activations.Tanh,
-				ActivationType.SoftMax => KerasApi.keras.activations.Softmax,
-				_ => throw new Exception($"Activation '{activation}' not found"),
+				Rank = this.Rank,
+				Filters = this.Filters,
+				KernelSize = this.KernelSize,
+				Activation = ActivationType.GetActivationFunc(),
+				DilationRate = this.DilationRate,
+				Strides = this.Strides,
+				DType = TF_DataType.TF_DOUBLE,
+				Padding = this.Padding.GetNameForTensorFlow(),
 			};
+			var kerasLayer = new Conv1D(args);
+			Tensors result = kerasLayer.Apply(inputs);
+			return result;
 		}
 	}
 }

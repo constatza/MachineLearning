@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
@@ -8,6 +8,8 @@
     <PackageProjectUrl>http://mgroup.ntua.gr/</PackageProjectUrl>
     <RepositoryUrl>https://github.com/mgroupntua/MachineLearning</RepositoryUrl>
     <PackageIconUrl>https://github.com/mgroupntua/MachineLearning/raw/develop/MGroupMachineLearningTensorFlow.png</PackageIconUrl>
+    <RunAnalyzersDuringBuild>False</RunAnalyzersDuringBuild>
+    <RunAnalyzersDuringLiveAnalysis>False</RunAnalyzersDuringLiveAnalysis>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,9 +19,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="SciSharp.TensorFlow.Redist" Version="2.7.0" />
-    <PackageReference Include="TensorFlow.Keras" Version="0.7.0" />
-    <PackageReference Include="TensorFlow.NET" Version="0.70.1" />
+    <PackageReference Include="NumSharp" Version="0.30.0" />
+    <PackageReference Include="SciSharp.TensorFlow.Redist" Version="2.11.4" />
+    <PackageReference Include="TensorFlow.Keras" Version="0.1.0-unstable.1980" />
+    <PackageReference Include="TensorFlow.NET" Version="0.1.0-unstable.1980" />
   </ItemGroup>
 
   <ItemGroup>

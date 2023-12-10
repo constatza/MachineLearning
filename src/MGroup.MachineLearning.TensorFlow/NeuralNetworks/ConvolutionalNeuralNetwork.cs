@@ -1,45 +1,28 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Tensorflow;
-using Tensorflow.Keras;
-using Tensorflow.Keras.ArgsDefinition;
-using Tensorflow.Keras.Engine;
-using Tensorflow.Keras.Optimizers;
-using Tensorflow.NumPy;
-using Tensorflow.Keras.Layers;
-using static Tensorflow.Binding;
-using static Tensorflow.KerasApi;
-using Tensorflow.Keras.Losses;
-using System.IO;
-using MGroup.MachineLearning.Preprocessing;
-using MGroup.MachineLearning.TensorFlow.KerasLayers;
-using static HDF.PInvoke.H5T;
-using static HDF.PInvoke.H5Z;
-using Tensorflow.Keras.Engine.DataAdapters;
-using Tensorflow.Keras.Metrics;
-using System.Xml.Linq;
-
 namespace MGroup.MachineLearning.TensorFlow.NeuralNetworks
 {
+	using System;
+	using System.IO;
+
+	using MGroup.MachineLearning.Preprocessing;
+	using MGroup.MachineLearning.TensorFlow.KerasLayers;
+	using Tensorflow;
+	using Tensorflow.Keras.Engine;
+	using Tensorflow.Keras.Losses;
+	using Tensorflow.Keras.Optimizers;
+	using Tensorflow.NumPy;
+
+	using static Tensorflow.Binding;
+	using static Tensorflow.KerasApi;
+
 	public class ConvolutionalNeuralNetwork //: INeuralNetwork
 	{
 		private Keras.Model model;
 		private NDArray trainX, testX, trainY, testY;
 		private bool classification;
 
-		public int? Seed { get; }
-		public int BatchSize { get; }
-		public int Epochs { get; }
-		public INetworkLayer[] NeuralNetworkLayer { get; private set; }
-		public INormalization NormalizationX { get; private set; }
-		public INormalization NormalizationY { get; private set; }
-		public OptimizerV2 Optimizer { get; }
-		public ILossFunc LossFunction { get; }
-		public Layer[] Layer { get; private set; }
-	
-
-		public ConvolutionalNeuralNetwork(INormalization normalizationX, INormalization normalizationY, OptimizerV2 optimizer, ILossFunc lossFunc, INetworkLayer[] neuralNetworkLayers, int epochs, int batchSize = -1, int? seed = 1, bool classification = false)
+		public ConvolutionalNeuralNetwork(INormalization normalizationX, INormalization normalizationY, OptimizerV2 optimizer, 
+			ILossFunc lossFunc, INetworkLayer[] neuralNetworkLayers, int epochs, int batchSize = -1, int? seed = 1, 
+			bool classification = false, bool shuffleTrainingData = false)
 		{
 			BatchSize = batchSize;
 			Epochs = epochs;
@@ -50,7 +33,7 @@ namespace MGroup.MachineLearning.TensorFlow.NeuralNetworks
 			LossFunction = lossFunc;
 			NeuralNetworkLayer = neuralNetworkLayers;
 			this.classification = classification;
-
+			ShuffleTrainingData = shuffleTrainingData;
 			if (seed != null)
 			{
 				tf.set_random_seed(seed.Value);
@@ -64,6 +47,26 @@ namespace MGroup.MachineLearning.TensorFlow.NeuralNetworks
 		{
 		}
 
+		public int? Seed { get; }
+
+		public bool ShuffleTrainingData { get; }
+
+		public int BatchSize { get; }
+
+		public int Epochs { get; }
+
+		public INetworkLayer[] NeuralNetworkLayer { get; private set; }
+
+		public INormalization NormalizationX { get; private set; }
+
+		public INormalization NormalizationY { get; private set; }
+
+		public OptimizerV2 Optimizer { get; }
+
+		public ILossFunc LossFunction { get; }
+
+		public Layer[] Layer { get; private set; }
+
 		public void Train(double[,,,] stimuli, double[,] responses) => Train(stimuli, responses, null, null);
 
 		public void Train(double[,,,] trainX, double[,] trainY, double[,,,] testX = null, double[,] testY = null)
@@ -76,7 +79,25 @@ namespace MGroup.MachineLearning.TensorFlow.NeuralNetworks
 
 			model.compile(loss: LossFunction, optimizer: Optimizer, metrics: new[] { "accuracy" });
 
-			model.fit(this.trainX, this.trainY, batch_size: BatchSize, epochs: Epochs, shuffle: false);
+			model.fit(this.trainX, this.trainY, batch_size: BatchSize, epochs: Epochs, shuffle: ShuffleTrainingData);
+
+			if (testX != null && testY != null)
+			{
+				model.evaluate(this.testX, this.testY, batch_size: BatchSize);
+			}
+		}
+
+		public void Train(Array trainX, Array trainY, Array testX = null, Array testY = null)
+		{
+			tf.enable_eager_execution();
+
+			PrepareData(trainX, trainY, testX, testY);
+
+			CreateModel();
+
+			model.compile(loss: LossFunction, optimizer: Optimizer, metrics: new[] { "accuracy" });
+
+			model.fit(this.trainX, this.trainY, batch_size: BatchSize, epochs: Epochs, shuffle: ShuffleTrainingData);
 
 			if (testX != null && testY != null)
 			{
@@ -101,6 +122,49 @@ namespace MGroup.MachineLearning.TensorFlow.NeuralNetworks
 			}
 
 			//responses = NormalizationY.Denormalize(responses);
+
+			return responses;
+		}
+
+		public double[,] EvaluateResponses(double[,,] stimuli)
+		{
+			//stimuli = NormalizationX.Normalize(stimuli);
+
+			var npData = np.array(stimuli);
+			var result = ((Tensor)model.Apply(npData, training: false)).numpy();
+			//var resultSqueezed = tf.squeeze(resultFull).ToArray<double>();
+			var responses = new double[result.shape[0], result.shape[1]]; //.GetShape().as_int_list()[1]];
+			for (int i = 0; i < result.shape[0]; i++)
+			{
+				for (int j = 0; j < result.shape[1]; j++)
+				{
+					responses[i, j] = result[i, j];
+				}
+			}
+
+			//responses = NormalizationY.Denormalize(responses);
+
+			return responses;
+		}
+
+		public double[,,,] EvaluateResponses(double[,] stimuli)
+		{
+			var npData = np.array(stimuli);
+			var result = ((Tensor)model.Apply(npData, training: false)).numpy();
+			var responses = new double[result.shape[0], result.shape[1], result.shape[2], result.shape[3]]; //.GetShape().as_int_list()[1]];
+			for (int i = 0; i < result.shape[0]; i++)
+			{
+				for (int j = 0; j < result.shape[1]; j++)
+				{
+					for (int k = 0; k < result.shape[2]; k++)
+					{
+						for (int m = 0;  m < result.shape[3]; m++)
+						{
+							responses[i, j, k, m] = result[i, j, k, m];
+						}
+					}
+				}
+			}
 
 			return responses;
 		}
@@ -151,7 +215,7 @@ namespace MGroup.MachineLearning.TensorFlow.NeuralNetworks
 			var predY = EvaluateResponses(testX);
 			var predYnp = np.array(predY);
 			var testYnp = np.array(testY);
-			var accuracy = new Tensor();
+			var accuracy = new Tensor(0);
 			if (classification == false)
 			{
 				accuracy = LossFunction.Call(testYnp, predYnp);
@@ -213,6 +277,17 @@ namespace MGroup.MachineLearning.TensorFlow.NeuralNetworks
 			}
 		}
 
+		private void PrepareData(Array trainX, Array trainY, Array testX = null, Array testY = null)
+		{
+			this.trainX = np.array(trainX);
+			this.trainY = np.array(trainY);
+			if (testX != null && testY != null)
+			{
+				this.testX = np.array(testX);
+				this.testY = np.array(testY);
+			}
+		}
+
 		private void CreateModel()
 		{
 			keras.backend.clear_session();
@@ -222,14 +297,24 @@ namespace MGroup.MachineLearning.TensorFlow.NeuralNetworks
 				throw new NotImplementedException($"First layer must be of type IInputLayer");
 			}
 
+			#region DEBUG
+			var text = new System.Text.StringBuilder();
+			text.AppendLine("CNN layers:");
+			#endregion
+
 			//var inputs = keras.Input(shape: (this.trainX.shape[1], this.trainX.shape[2], this.trainX.shape[3]), dtype: TF_DataType.TF_DOUBLE);
 			var inputs = keras.Input(shape: ((KerasLayers.InputLayer)NeuralNetworkLayer[0]).InputShape, dtype: TF_DataType.TF_DOUBLE); //.as_int_list()[0]
 			var outputs = inputs;
+			text.AppendLine($"Layer 0: {NeuralNetworkLayer[0].ToString()}, shape={outputs.shape}");
 
 			for (int i = 1; i < NeuralNetworkLayer.Length; i++)
 			{
+				text.Append($"Layer {i}: {NeuralNetworkLayer[i].ToString()}, input shape={outputs.shape}, ");
+
 				outputs = NeuralNetworkLayer[i].BuildLayer(outputs);
+				text.AppendLine($"output shape={outputs.shape}");
 			}
+			System.Diagnostics.Debug.WriteLine(text.ToString());
 
 			model = new Keras.Model(inputs, outputs, "current_model");
 
