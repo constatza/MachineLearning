@@ -1,4 +1,4 @@
-namespace MGroup.Constitutive.Structural.MachineLearning.Surrogates
+namespace MGroup.MachineLearning.TensorFlow
 {
 	using System;
 	using System.Collections.Generic;

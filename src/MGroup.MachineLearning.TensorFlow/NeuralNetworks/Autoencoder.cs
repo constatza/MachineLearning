@@ -81,7 +81,7 @@ namespace MGroup.MachineLearning.TensorFlow.NeuralNetworks
 
 			CreateModel();
 
-			autoencoderModel.compile(loss: LossFunction, optimizer: Optimizer);
+			autoencoderModel.compile(loss: LossFunction, optimizer: Optimizer, metrics: new[] { "accuracy" });
 
 			autoencoderModel.fit(this.trainX, this.trainX, batch_size: BatchSize, epochs: Epochs, shuffle: ShuffleTrainingData);
 

@@ -1,4 +1,4 @@
-namespace MGroup.Constitutive.Structural.MachineLearning.Surrogates
+namespace MGroup.MachineLearning.TensorFlow
 {
 	using System;
 	using System.Collections.Generic;
@@ -16,7 +16,7 @@ namespace MGroup.Constitutive.Structural.MachineLearning.Surrogates
 	using MGroup.MachineLearning.TensorFlow.Keras.Optimizers;
 	using MGroup.MachineLearning.Interfaces;
 
-	public class Encoder2D : ISurrogateModel2DTo2D
+	public class Decoder2D : ISurrogateModel2DTo2D
 	{
 		private const TF_DataType DataType = TF_DataType.TF_DOUBLE;
 
@@ -26,16 +26,16 @@ namespace MGroup.Constitutive.Structural.MachineLearning.Surrogates
 		private readonly int _caeKernelSize;
 		private readonly int _caeStrides;
 		private readonly ConvolutionPaddingType _caePadding;
-		private readonly int[] _encoderFilters;
+		private readonly int[] _decoderFiltersWithoutOutput;
 		private readonly int _latentSpaceSize = 8;
 		private readonly int? _tfSeed;
 		private readonly Func<StreamWriter> _initOutputStream;
 
-		private ConvolutionalNeuralNetwork _encoder;
+		private ConvolutionalNeuralNetwork _decoder;
 
-		public Encoder2D(int latentSpaceSize, int caeBatchSize = 10, int caeNumEpochs = 40, float caeLearningRate = 5E-4f,
+		public Decoder2D(int latentSpaceSize, int caeBatchSize = 10, int caeNumEpochs = 40, float caeLearningRate = 5E-4f,
 			int caeKernelSize = 5, int caeStrides = 1, ConvolutionPaddingType caePadding = ConvolutionPaddingType.Same,
-			int[] encoderFilters = null, int? tfSeed = null)
+			int[] decoderFiltersWithoutOutput = null, int? tfSeed = null)
 		{
 			_caeBatchSize = caeBatchSize;
 			_caeNumEpochs = caeNumEpochs;
@@ -43,24 +43,24 @@ namespace MGroup.Constitutive.Structural.MachineLearning.Surrogates
 			_caeKernelSize = caeKernelSize;
 			_caeStrides = caeStrides;
 			_caePadding = caePadding;
-			_encoderFilters = encoderFilters;
+			_decoderFiltersWithoutOutput = decoderFiltersWithoutOutput;
 			_latentSpaceSize = latentSpaceSize;
 			_tfSeed = tfSeed;
 
-			if (encoderFilters == null)
+			if (decoderFiltersWithoutOutput == null)
 			{
-				encoderFilters = new int[] { 128, 64, 32, 16 };
+				decoderFiltersWithoutOutput = new int[] { 32, 64, 128 };
 			}
 
-			_encoderFilters = encoderFilters;
+			_decoderFiltersWithoutOutput = decoderFiltersWithoutOutput;
 
 			_initOutputStream = () => new DebugTextWriter();
 		}
 
 		public IReadOnlyList<string> ErrorNames => new string[] { "Surrogate error" };
 
-		public Dictionary<string, double> TrainAndEvaluate(double[,] solutionSpaceDataset, double[,] latentSpaceDataset, 
-			DatasetSplitter splitter)
+		public Dictionary<string, double> TrainAndEvaluate(double[,] latentSpaceDataset, double[,] solutionSpaceDataset, 
+			DatasetSplitter? splitter)
 		{
 			if (splitter == null)
 			{
@@ -68,7 +68,6 @@ namespace MGroup.Constitutive.Structural.MachineLearning.Surrogates
 				splitter.MinTestSetPercentage = 0.2;
 				splitter.MinValidationSetPercentage = 0.0;
 			}
-
 			int numTotalSamples = solutionSpaceDataset.GetLength(0);
 			int solutionSpaceSize = solutionSpaceDataset.GetLength(1);
 			if (latentSpaceDataset.GetLength(0) != numTotalSamples)
@@ -80,14 +79,14 @@ namespace MGroup.Constitutive.Structural.MachineLearning.Surrogates
 			if (latentSpaceDataset.GetLength(1) != _latentSpaceSize)
 			{
 				throw new ArgumentException(
-					$"The 2nd dimension of the output dataset must be equal to the size of the latent space {_latentSpaceSize}");
+					$"The 2nd dimension of the input dataset must be equal to the size of the latent space {_latentSpaceSize}");
 			}
 
 			splitter.SetupSplittingRules(numTotalSamples);
 			(double[,] trainSolutions, double[,] testSolutions, _) = splitter.SplitDataset(solutionSpaceDataset);
 			(double[,] trainLatent, double[,] testLatent, _) = splitter.SplitDataset(latentSpaceDataset);
 
-			BuildEncoder(solutionSpaceSize);
+			BuildDecoder(solutionSpaceSize);
 			Train(trainSolutions, trainLatent);
 			double error = Evaluate(testSolutions, testLatent);
 
@@ -97,31 +96,35 @@ namespace MGroup.Constitutive.Structural.MachineLearning.Surrogates
 			};
 		}
 
-		private void BuildEncoder(int solutionSpaceDim)
+		private void BuildDecoder(int solutionSpaceDim)
 		{
-			var encoderLayers = new List<INetworkLayer>();
-			encoderLayers.Add(new InputLayer(new int[] { 1, 1, solutionSpaceDim})); // This was not needed in the original python code
-			for (int i = 0; i < _encoderFilters.Length; ++i)
+			// Decoder layers
+			var decoderLayers = new List<INetworkLayer>();
+			decoderLayers.Add(new InputLayer(new int[] { _latentSpaceSize }));
+			int denseLayerSize = _decoderFiltersWithoutOutput[0] / 2; // In python code, it did not divide over 2. 
+			decoderLayers.Add(new DenseLayer(denseLayerSize, ActivationType.RelU)); // This is 16 in the paper
+			decoderLayers.Add(new ReshapeLayer(new int[] { 1, 1, denseLayerSize }));
+			for (int i = 0; i < _decoderFiltersWithoutOutput.Length; ++i)
 			{
-				encoderLayers.Add(new Convolutional2DLayer(_encoderFilters[i], (_caeKernelSize, 1), ActivationType.RelU,
-					dilationRate:1, padding: _caePadding.GetNameForTensorFlow()));
+				decoderLayers.Add(new Convolutional2DTransposeLayer(_decoderFiltersWithoutOutput[i], (_caeKernelSize, 1),
+					ActivationType.RelU, strides: (_caeStrides, 1), padding: _caePadding.GetNameForTensorFlow(), dilationRate: 1));
 			}
-			encoderLayers.Add(new FlattenLayer());
-			encoderLayers.Add(new DenseLayer(_latentSpaceSize, ActivationType.Linear)); // Output layer. Activation: f(x) = x
+			decoderLayers.Add(new Convolutional2DTransposeLayer(solutionSpaceDim, (_caeKernelSize, 1),
+				ActivationType.Linear, strides: (_caeStrides, 1), padding: _caePadding.GetNameForTensorFlow(), dilationRate: 1));
 
 			INormalization normalizationX = new NullNormalization();
 			INormalization normalizationY = new NullNormalization();
 			var optimizer = new Adam(dataType: DataType, learning_rate: _caeLearningRate);
 			ILossFunc lossFunction = KerasApi.keras.losses.MeanSquaredError();
-			_encoder = new ConvolutionalNeuralNetwork(normalizationX, normalizationY, optimizer, lossFunction,
-				encoderLayers.ToArray(), _caeNumEpochs, _caeBatchSize, _tfSeed, shuffleTrainingData: true);
+			_decoder = new ConvolutionalNeuralNetwork(normalizationX, normalizationY, optimizer, lossFunction,
+				decoderLayers.ToArray(), _caeNumEpochs, _caeBatchSize, _tfSeed, shuffleTrainingData: true);
 		}
 
 		private void Train(double[,] trainSolutions, double[,] trainLatent)
 		{
-			//double[,,,] trainX = trainSolutions.AddEmptyDimensions(false, false, true, true);
-			double[,,,] trainX = trainSolutions.AddEmptyDimensions(false, true, true, false);
-			double[,] trainY = trainLatent;
+			double[,] trainX = trainLatent;
+			//double[,,] trainX = trainLatent.AddEmptyDimensions(false, false, true);
+			double[,,,] trainY = trainSolutions.AddEmptyDimensions(false, true, true, false);
 
 			//testLatent set is different than python
 			var watch = new Stopwatch();
@@ -129,7 +132,7 @@ namespace MGroup.Constitutive.Structural.MachineLearning.Surrogates
 
 			writer.WriteLine("Training feed forward neural network:");
 			watch.Restart();
-			_encoder.Train(trainX, trainY); // python code also used the encoded test data as validation set here.
+			_decoder.Train(trainX, trainY);
 			watch.Stop();
 			writer.WriteLine("Ellapsed ms: " + watch.ElapsedMilliseconds);
 			writer.Close();
@@ -137,16 +140,16 @@ namespace MGroup.Constitutive.Structural.MachineLearning.Surrogates
 
 		private double Evaluate(double[,] testSolutions, double[,] testLatent)
 		{
-			//double[,,,] testX = testSolutions.AddEmptyDimensions(false, false, true, true);
-			double[,,,] testX = testSolutions.AddEmptyDimensions(false, true, true, false);
+			//double[,,,] testY = testSolutions.AddEmptyDimensions(false, false, true, true);
+			double[,,,] testY = testSolutions.AddEmptyDimensions(false, true, true, false);
 
 			var watch = new Stopwatch();
 			StreamWriter writer = _initOutputStream();
 
-			writer.WriteLine("Testing Encoder2D:");
+			writer.WriteLine("Testing Decoder 2D:");
 			watch.Start();
-			double[,] predictions = _encoder.EvaluateResponses(testX);
-			double error = ErrorMetrics.CalculateMeanNorm2Error(testLatent, predictions);
+			double[,,,] predictions = _decoder.EvaluateResponses(testLatent);
+			double error = ErrorMetrics.CalculateMeanNorm2Error(testY, predictions);
 
 			watch.Stop();
 			writer.WriteLine("Ellapsed ms: " + watch.ElapsedMilliseconds);

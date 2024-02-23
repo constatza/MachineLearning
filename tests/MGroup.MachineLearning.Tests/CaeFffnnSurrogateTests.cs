@@ -1,4 +1,4 @@
-namespace MGroup.Constitutive.Structural.MachineLearning.Tests
+namespace MGroup.MachineLearning.Tests
 {
 	using System;
 	using System.Collections.Generic;
@@ -7,8 +7,8 @@ namespace MGroup.Constitutive.Structural.MachineLearning.Tests
 	using System.Text;
 	using System.Threading.Tasks;
 
-	using MGroup.Constitutive.Structural.MachineLearning.Surrogates;
-	using MGroup.Constitutive.Structural.MachineLearning.Tests.Utilities;
+	using MGroup.MachineLearning.Tests.Utilities;
+	using MGroup.MachineLearning.TensorFlow;
 	using MGroup.MachineLearning.TensorFlow.KerasLayers;
 	using MGroup.MachineLearning.Utilities;
 
@@ -17,6 +17,7 @@ namespace MGroup.Constitutive.Structural.MachineLearning.Tests
 	using Tensorflow;
 
 	using Xunit;
+	using System.IO;
 
 	[Collection("Run sequentially")]
 	public static class CaeFffnnSurrogateTests
@@ -26,7 +27,7 @@ namespace MGroup.Constitutive.Structural.MachineLearning.Tests
 		{
 			string outputPath = "decoder2D_errors_NET.txt";
 			(double[,] solutions, double[,] parameters, double[,] latentSpace) = ReadData();
-			var decoder = new Surrogates.Decoder2D(latentSpaceSize: 8, caeKernelSize: 5, caePadding: ConvolutionPaddingType.Same);
+			var decoder = new Decoder2D(latentSpaceSize: 8, caeKernelSize: 5, caePadding: ConvolutionPaddingType.Same);
 
 			var evaluator = new SurrogateModelEvaluator(100, outputPath);
 			evaluator.RunExperiments(decoder, latentSpace, solutions);
@@ -39,7 +40,7 @@ namespace MGroup.Constitutive.Structural.MachineLearning.Tests
 		{
 			string outputPath = "encoder1D_errors_NET.txt";
 			(double[,] solutions, double[,] parameters, double[,] latentSpace) = ReadData();
-			var encoder = new Surrogates.Encoder1D(latentSpaceSize:8, caeKernelSize:5, caePadding: ConvolutionPaddingType.Same);
+			var encoder = new Encoder1D(latentSpaceSize:8, caeKernelSize:5, caePadding: ConvolutionPaddingType.Same);
 
 			var evaluator = new SurrogateModelEvaluator(100, outputPath);
 			evaluator.RunExperiments(encoder, solutions, latentSpace);
@@ -53,7 +54,7 @@ namespace MGroup.Constitutive.Structural.MachineLearning.Tests
 			string errorType = "surrogate error";
 			string outputPath = "encoder2D_errors_NET.txt";
 			(double[,] solutions, double[,] parameters, double[,] latentSpace) = ReadData();
-			var encoder = new Surrogates.Encoder2D(latentSpaceSize: 8, caeKernelSize: 5, caePadding: ConvolutionPaddingType.Same);
+			var encoder = new Encoder2D(latentSpaceSize: 8, caeKernelSize: 5, caePadding: ConvolutionPaddingType.Same);
 
 			var evaluator = new SurrogateModelEvaluator(100, outputPath);
 			evaluator.RunExperiments(encoder, solutions, latentSpace);
@@ -121,7 +122,7 @@ namespace MGroup.Constitutive.Structural.MachineLearning.Tests
 		private static (double[,] solutions, double[,] parameters, double[,] latentSpace) ReadData()
 		{
 			string folder = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.FullName 
-				+ "\\MGroup.Constitutive.Structural.MachineLearning.Tests\\InputFiles\\CaeFfnnSurrogate\\";
+				+ "\\MGroup.MachineLearning.Tests\\InputFiles\\CaeFfnnSurrogate\\";
 			string solutionsPath = folder + "solutions.npy";
 			string parametersPath = folder + "parameters.npy";
 			string latentSpacePath = folder + "latentSpace.npy";

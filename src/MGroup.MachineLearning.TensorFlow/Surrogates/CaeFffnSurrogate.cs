@@ -1,4 +1,4 @@
-namespace MGroup.Constitutive.Structural.MachineLearning.Surrogates
+namespace MGroup.MachineLearning.TensorFlow
 {
 	using System;
 	using System.Collections.Generic;
@@ -7,8 +7,6 @@ namespace MGroup.Constitutive.Structural.MachineLearning.Surrogates
 	using System.Text;
 	using System.Text.RegularExpressions;
 	using System.Timers;
-
-	using DotNumerics.LinearAlgebra;
 
 	using MGroup.MachineLearning.Interfaces;
 	using MGroup.MachineLearning.Preprocessing;
