@@ -46,7 +46,7 @@ namespace MGroup.MachineLearning.TensorFlow
 			_initOutputStream = () => new DebugTextWriter();
 		}
 
-		public IReadOnlyList<string> ErrorNames => new string[] { "Surrogate error" };
+		public IReadOnlyList<string> ErrorNames => new string[] { "All" };
 
 		public Dictionary<string, double> TrainAndEvaluate(double[,] parameterSpaceDataset, double[,] latentSpaceDataset, 
 			DatasetSplitter splitter)
