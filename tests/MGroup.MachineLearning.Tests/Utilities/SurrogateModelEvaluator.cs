@@ -13,14 +13,26 @@ namespace MGroup.MachineLearning.Tests.Utilities
 	//TODO: Plot histogram of residuals
 	public class SurrogateModelEvaluator
 	{
+		private readonly ISurrogateModel2DTo2D _surrogate;
 		private readonly int _numExperiments;
 		private readonly string _outputPathPrefix;
+		private readonly string[] _outputFilepaths;
 
-		public SurrogateModelEvaluator(int numExperiments, string outputPathPrefix)
+		public SurrogateModelEvaluator(ISurrogateModel2DTo2D surrogate, int numExperiments,  string outputPathPrefix)
 		{
+			_surrogate = surrogate;
 			_numExperiments = numExperiments;
 			_outputPathPrefix = outputPathPrefix;
+
+			_outputFilepaths = new string[surrogate.ErrorNames.Count];
+			for (int i = 0; i < _outputFilepaths.Length; i++)
+			{
+				string errorName = surrogate.ErrorNames[i];
+				_outputFilepaths[i] = GetOutputPathFor(errorName);
+			}
 		}
+
+		public IReadOnlyList<string> OutputFilePaths => _outputFilepaths;
 
 		public (int sampleSize, double mean, double stdev) PerformStatisticAnalysisOnErrors(string path)
 		{
@@ -45,11 +57,10 @@ namespace MGroup.MachineLearning.Tests.Utilities
 			return (errors.Count, mean, stdev);
 		}
 
-		public void RunExperiments(ISurrogateModel2DTo2D surrogate, double[,] inputDataset, double[,] outputDataset)
+		public void RunExperiments(double[,] inputDataset, double[,] outputDataset)
 		{
-			foreach (string errorName in surrogate.ErrorNames)
+			foreach (string path in _outputFilepaths)
 			{
-				string path = WriteOutputPath(errorName);
 				using (var writer = new StreamWriter(path, true))
 				{
 					writer.AutoFlush = true;
@@ -65,10 +76,10 @@ namespace MGroup.MachineLearning.Tests.Utilities
 				splitter.MinValidationSetPercentage = 0.0;
 				splitter.SetOrderToContiguous(DataSubsetType.Training, DataSubsetType.Test);
 
-				Dictionary<string, double> errors = surrogate.TrainAndEvaluate(inputDataset, outputDataset, splitter);
+				Dictionary<string, double> errors = _surrogate.TrainAndEvaluate(inputDataset, outputDataset, splitter);
 				foreach (string errorName in errors.Keys)
 				{
-					string path = WriteOutputPath(errorName);
+					string path = GetOutputPathFor(errorName);
 					using (var writer = new StreamWriter(path, true))
 					{
 						writer.AutoFlush = true;
@@ -98,7 +109,7 @@ namespace MGroup.MachineLearning.Tests.Utilities
 			return Math.Sqrt(sum / numbers.Count);
 		}
 
-		private string WriteOutputPath(string errorName)
+		private string GetOutputPathFor(string errorName)
 		{
 			// There may be more than one "."
 			string[] words = _outputPathPrefix.Split('.');
