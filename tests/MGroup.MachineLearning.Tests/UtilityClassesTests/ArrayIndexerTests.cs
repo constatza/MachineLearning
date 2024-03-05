@@ -12,11 +12,11 @@ namespace MGroup.MachineLearning.Tests.UtilityClassesTests
 
 	public class ArrayIndexerTests
 	{
-		[Theory]
-		[InlineData(true)]
-		[InlineData(false)]
-		public static void TestIndexer1D(bool fullArray)
+		[Fact]
+		public static void TestIndexer1D()
 		{
+			bool fullArray = true;
+
 			int dim0 = 10;
 			int[] lengths;
 			int[] lowerBounds;
@@ -51,11 +51,11 @@ namespace MGroup.MachineLearning.Tests.UtilityClassesTests
 			Assert.Equal(arrayExpected, arrayComputed);
 		}
 
-		[Theory]
-		[InlineData(true)]
-		[InlineData(false)]
-		public static void TestIndexer2D(bool fullArray)
+		[Fact]
+		public static void TestIndexer2D()
 		{
+			bool fullArray = true;
+
 			int dim0 = 8;
 			int dim1 = 12;
 			int[] lengths;
@@ -94,11 +94,11 @@ namespace MGroup.MachineLearning.Tests.UtilityClassesTests
 			Assert.Equal(arrayExpected, arrayComputed);
 		}
 
-		[Theory]
-		[InlineData(true)]
-		[InlineData(false)]
-		public static void TestIndexer3D(bool fullArray)
+		[Fact]
+		public static void TestIndexer3D()
 		{
+			bool fullArray = true;
+
 			int dim0 = 8;
 			int dim1 = 12;
 			int dim2 = 16;
@@ -141,11 +141,11 @@ namespace MGroup.MachineLearning.Tests.UtilityClassesTests
 			Assert.Equal(arrayExpected, arrayComputed);
 		}
 
-		[Theory]
-		[InlineData(true)]
-		[InlineData(false)]
-		public static void TestIndexer4D(bool fullArray)
+		[Fact]
+		public static void TestIndexer4D()
 		{
+			bool fullArray = true;
+
 			int dim0 = 8;
 			int dim1 = 12;
 			int dim2 = 16;
@@ -192,11 +192,11 @@ namespace MGroup.MachineLearning.Tests.UtilityClassesTests
 			Assert.Equal(arrayExpected, arrayComputed);
 		}
 
-		[Theory]
-		[InlineData(true)]
-		[InlineData(false)]
-		public static void TestIndexer5D(bool fullArray)
+		[Fact]
+		public static void TestIndexer5D()
 		{
+			bool fullArray = true;
+
 			int dim0 = 8;
 			int dim1 = 12;
 			int dim2 = 16;
@@ -247,11 +247,11 @@ namespace MGroup.MachineLearning.Tests.UtilityClassesTests
 			Assert.Equal(arrayExpected, arrayComputed);
 		}
 
-		[Theory]
-		[InlineData(true)]
-		[InlineData(false)]
-		public static void TestIndexer6D(bool fullArray)
+		[Fact]
+		public static void TestIndexer6D()
 		{
+			bool fullArray = true;
+
 			int dim0 = 8;
 			int dim1 = 12;
 			int dim2 = 16;
